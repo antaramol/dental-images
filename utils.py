@@ -64,9 +64,10 @@ plt.show()
 
 
 #%%
-# leave 5 subjects out for testing (5 random subjects_id)
+# leave N subjects out for testing (5 random subjects_id)
+N = 10
 seed = 42
-test_subjects = data["subject_id"].sample(5, random_state=seed)
+test_subjects = data["subject_id"].sample(N, random_state=seed)
 test_data = data[data["subject_id"].isin(test_subjects)]
 train_val_data = data[~data["subject_id"].isin(test_subjects)]
 
