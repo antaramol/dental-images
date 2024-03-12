@@ -63,6 +63,14 @@ data["under_18"].value_counts().plot(kind="bar")
 plt.show()
 
 
+#%%
+# leave 5 subjects out for testing (5 random subjects_id)
+seed = 42
+test_subjects = data["subject_id"].sample(5, random_state=seed)
+test_data = data[data["subject_id"].isin(test_subjects)]
+train_val_data = data[~data["subject_id"].isin(test_subjects)]
+
+
 
 # %%
 
@@ -72,35 +80,31 @@ import shutil
 
 train_path = "data/dental-images/train"
 val_path = "data/dental-images/val"
+test_path = "data/dental-images/test"
 
 # create the folders if they don't exist
-for folder in [train_path, val_path]:
+for folder in [train_path, val_path, test_path]:
     if not os.path.exists(folder):
         os.makedirs(os.path.join(folder, "under_18"))
         os.makedirs(os.path.join(folder, "over_18"))
 
+
 # clear the folders
-for folder in [train_path, val_path]:
+for folder in [train_path, val_path, test_path]:
     for subfolder in ["under_18", "over_18"]:
         for file in glob.glob(os.path.join(folder, subfolder, "*")):
             os.remove(file)
 
 #%%
-
-# load data from csv
-data = pd.read_csv("data/dental-images/dental-data.csv")
-# move the images to the folders
-        
-# shuffle the data
-seed = 42
-data = data.sample(frac=1, random_state=seed).reset_index(drop=True)
+# shuffle the training data
+train_val_data = train_val_data.sample(frac=1, random_state=seed)
 
 
 #%%
 # 80% of the data is for training
-train_data = data.iloc[:int(len(data) * 0.8)]
+train_data = train_val_data.iloc[:int(0.8 * len(train_val_data))]
 # 20% of the data is for validation
-val_data = data.iloc[int(len(data) * 0.8):]
+val_data = train_val_data.iloc[int(0.8 * len(train_val_data)):]
 
 # move the images to the folders
 for i, row in train_data.iterrows():
@@ -109,6 +113,9 @@ for i, row in train_data.iterrows():
 for i, row in val_data.iterrows():
     shutil.copy(row["image"], os.path.join(val_path, "under_18" if row["under_18"] else "over_18"))
 
+# save the test data
+for i, row in test_data.iterrows():
+    shutil.copy(row["image"], os.path.join(test_path, "under_18" if row["under_18"] else "over_18"))
 
 
 # %%
@@ -136,3 +143,7 @@ plt.show()
 
 
 # %%
+print(f"Total images: {len(data)}")
+print(f"Train images: {len(train_data)}")
+print(f"Validation images: {len(val_data)}")
+print(f"Test images: {len(test_data)}")
