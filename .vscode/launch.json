@@ -10,6 +10,14 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal"
+        },
+        {
+            "name": "Python: pipeline",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pipeline",
+            "args": ["--input_data_folder", "UP_DOWN_stadiazione_CH_gimp"],
+            "console": "integratedTerminal"
         }
     ]
 }

@@ -160,4 +160,5 @@ cython_debug/
 #.idea/
 
 
-data/
+UP_DOWN_stadiazione_CH_gimp/
+outputs/
