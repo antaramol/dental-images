@@ -4,8 +4,9 @@ import os
 import glob
 import logging
 import shutil
+import numpy as np
 
-OUTPUTS_FOLDER = "outputs"
+OUTPUTS_FOLDER = "outputs_single_images_k_fold"
 DATASET_FOLDER = OUTPUTS_FOLDER + "/data"
 MODELS_FOLDER = OUTPUTS_FOLDER + "/models"
 
@@ -21,27 +22,13 @@ SEED = 42
 def prepare_folders():
 
     # create the outputs, data and models folders if they don't exist
-    for folder in [OUTPUTS_FOLDER, DATASET_FOLDER, MODELS_FOLDER, TRAIN_FOLDER, VAL_FOLDER]:
+    for folder in [OUTPUTS_FOLDER, DATASET_FOLDER, MODELS_FOLDER]:
         if not os.path.exists(folder):
             os.makedirs(folder)
 
     
-    # clear data folders
-    for folder in [TRAIN_FOLDER, VAL_FOLDER]:
-        if os.path.exists(folder):
-            shutil.rmtree(folder)
-
-    # create the under_18 and over_18 folders
-    for folder in [TRAIN_FOLDER, VAL_FOLDER]:
-        for c in CLASSES:
-            class_folder = os.path.join(folder, c)
-            if not os.path.exists(class_folder):
-                os.makedirs(class_folder)
-
-    # delete csv file if it exists already
-    data_file = os.path.join(DATASET_FOLDER, "dental-data.csv")
-    if os.path.exists(data_file):
-        os.remove(data_file)
+    # clear data folder
+    os.system(f"rm -rf {DATASET_FOLDER}/*")
             
 
 
@@ -112,3 +99,37 @@ def load_data_into_folders(data_file):
             shutil.copy(image_path, class_folder)
 
     return TRAIN_FOLDER, VAL_FOLDER
+
+
+def load_data_into_k_fold_folders(data_file, k=5):
+    
+        data = pd.read_csv(data_file)
+    
+        # shuffle the data
+        data = data.sample(frac=1, random_state=SEED)
+    
+        # split the data into k folds
+        k_fold_data = np.array_split(data, k)
+    
+        # save data into k-fold folders, each folder contains a train and val folder with subfolders for each class
+        k_fold_folders = []
+        
+        for i in range(k):
+            k_fold_folder = os.path.join(DATASET_FOLDER, f"k_fold_{i}")
+            k_fold_folders.append(k_fold_folder)
+            
+            for folder in [k_fold_folder + "/train", k_fold_folder + "/val"]:
+                for c in CLASSES:
+                    class_folder = os.path.join(folder, c)
+                    if not os.path.exists(class_folder):
+                        os.makedirs(class_folder)
+            
+            # copy the images to the train and val folders
+            for j, df in enumerate(k_fold_data):
+                folder = k_fold_folder + "/val" if j == i else k_fold_folder + "/train"
+                for index, row in df.iterrows():
+                    image_path = row["image"]
+                    class_folder = os.path.join(folder, "under_18" if row["under_18"] else "over_18")
+                    shutil.copy(image_path, class_folder)
+
+        return k_fold_folders

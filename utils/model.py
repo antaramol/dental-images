@@ -16,6 +16,7 @@ from tempfile import TemporaryDirectory
 
 import logging
 
+from .data_processing import MODELS_FOLDER, OUTPUTS_FOLDER
 
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import classification_report
@@ -23,7 +24,6 @@ from sklearn.metrics import classification_report
 import seaborn
 import pandas as pd
 
-MODELS_FOLDER = "outputs/models"
 
 def load_dataset(train_folder, val_folder, data_augmentation):
     # logging.info(f"Loading dataset from {train_folder} and {val_folder}")
@@ -143,38 +143,56 @@ def train(model, criterion, optimizer, scheduler, num_epochs, dataloaders, datas
     return model, history
 
 
-def update_results_csv(architecture, from_pretrained, data_augmentation, epochs, best_acc, model_path):
+def update_results_csv(architecture, from_pretrained, fixed_feature_extractor, data_augmentation, epochs, best_acc, model_path):
 
-    results = pd.DataFrame({"architecture": [architecture], "from_pretrained": [from_pretrained], "data_augmentation": [data_augmentation], "epochs": [epochs], "best_acc": [best_acc], "model_path": [model_path]})
+    results = pd.DataFrame({"architecture": [architecture], "from_pretrained": [from_pretrained], "fixed_feature_extractor": [fixed_feature_extractor],
+                            "data_augmentation": [data_augmentation], "epochs": [epochs], "best_acc": [best_acc], "model_path": [model_path]})
 
     # read the csv file if it exists, else create a new one
-    if os.path.exists("outputs/results.csv"):
-        old_results = pd.read_csv("outputs/results.csv")
+    if os.path.exists(os.path.join(OUTPUTS_FOLDER, "results.csv")):
+        old_results = pd.read_csv(os.path.join(OUTPUTS_FOLDER, "results.csv"))
         results = pd.concat([old_results, results])
 
-    results.to_csv("outputs/results.csv", index=False)
+    results.to_csv(os.path.join(OUTPUTS_FOLDER, "results.csv"), index=False)
 
 
 
-def train_model(train_folder, val_folder, architecture='resnet18', from_pretrained=False, epochs=25, learning_rate=0.001, data_augmentation=False):
+def train_model(dataloaders, dataset_sizes, class_names, device,
+                 architecture='resnet18', from_pretrained=False, epochs=25, learning_rate=0.001, data_augmentation=False, fixed_feature_extractor=False):
     # load the dataset
     if data_augmentation:
         logging.info("Data augmentation enabled")
     else:
         logging.info("Data augmentation disabled")
 
-    dataloaders, dataset_sizes, class_names, device = load_dataset(train_folder, val_folder, data_augmentation)
 
     # load the model    
     if architecture == "resnet18":
         from torchvision.models.resnet import ResNet18_Weights
         model = models.resnet18(weights=ResNet18_Weights.IMAGENET1K_V1 if from_pretrained else None)
+    elif architecture == "resnet34":
+        from torchvision.models.resnet import ResNet34_Weights
+        model = models.resnet34(weights=ResNet34_Weights.IMAGENET1K_V1 if from_pretrained else None)
     elif architecture == "shufflenet_v2_x1_0":
         from torchvision.models.shufflenetv2 import ShuffleNet_V2_X1_0_Weights
         model = models.shufflenet_v2_x1_0(weights=ShuffleNet_V2_X1_0_Weights.IMAGENET1K_V1 if from_pretrained else None)
+    elif architecture == "shufflenet_v2_x0_5":
+        from torchvision.models.shufflenetv2 import ShuffleNet_V2_X0_5_Weights
+        model = models.shufflenet_v2_x0_5(weights=ShuffleNet_V2_X0_5_Weights.IMAGENET1K_V1 if from_pretrained else None)
+    elif architecture == "shufflenet_v2_x1_5":
+        from torchvision.models.shufflenetv2 import ShuffleNet_V2_X1_5_Weights
+        model = models.shufflenet_v2_x1_5(weights=ShuffleNet_V2_X1_5_Weights.IMAGENET1K_V1 if from_pretrained else None)
+    elif architecture == "shufflenet_v2_x2_0":
+        from torchvision.models.shufflenetv2 import ShuffleNet_V2_X2_0_Weights
+        model = models.shufflenet_v2_x2_0(weights=ShuffleNet_V2_X2_0_Weights.IMAGENET1K_V1 if from_pretrained else None)
 
     # logging.info(f"Model: {model}")
     logging.info(f"From pretrained: {from_pretrained}")
+
+
+    if from_pretrained and fixed_feature_extractor:
+        for param in model.parameters():
+            param.requires_grad = False
     
 
     num_ftrs = model.fc.in_features
@@ -240,7 +258,7 @@ def train_model(train_folder, val_folder, architecture='resnet18', from_pretrain
 
 
     # update the results csv
-    update_results_csv(architecture, from_pretrained, data_augmentation, epochs, max(history['val']['acc']), model_path)
+    update_results_csv(architecture, from_pretrained, fixed_feature_extractor, data_augmentation, epochs, max(history['val']['acc']), model_path)
     
 
     logging.info(f"Model saved into {model_path}")   
@@ -250,6 +268,29 @@ def train_model(train_folder, val_folder, architecture='resnet18', from_pretrain
 
 
 
-def evaluate_model(model, val_folder):
-    # evaluate the model
-    pass
+def evaluate_model(model_path, dataloaders, device):
+    model = torch.load(model_path)
+    model.eval()
+
+    # get acc on the validation set
+    predictions = []
+    real_labels = []
+
+    with torch.no_grad():
+        for inputs, labels in dataloaders['val']:
+            inputs = inputs.to(device)
+            labels = labels.to(device)
+
+            outputs = model(inputs)
+            _, preds = torch.max(outputs, 1)
+
+            predictions.extend(preds.cpu().numpy())
+            real_labels.extend(labels.cpu().numpy())
+
+    predictions = np.array(predictions)
+    real_labels = np.array(real_labels)
+
+    accuracy = np.mean(predictions == real_labels)
+    logging.info(f"Accuracy: {accuracy}")
+    return accuracy, predictions, real_labels
+
