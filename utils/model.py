@@ -26,6 +26,7 @@ import pandas as pd
 MODELS_FOLDER = "outputs/models"
 
 def load_dataset(train_folder, val_folder, data_augmentation):
+    # logging.info(f"Loading dataset from {train_folder} and {val_folder}")
     data_transforms = {
     'train': v2.Compose([
             v2.RandomRotation(30) if data_augmentation else v2.RandomRotation(0),
@@ -60,7 +61,7 @@ def load_dataset(train_folder, val_folder, data_augmentation):
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    logging.info(image_datasets)
+    # logging.info(image_datasets)
 
     return dataloaders, dataset_sizes, class_names, device
 
@@ -172,7 +173,7 @@ def train_model(train_folder, val_folder, architecture='resnet18', from_pretrain
         from torchvision.models.shufflenetv2 import ShuffleNet_V2_X1_0_Weights
         model = models.shufflenet_v2_x1_0(weights=ShuffleNet_V2_X1_0_Weights.IMAGENET1K_V1 if from_pretrained else None)
 
-    logging.info(f"Model: {model}")
+    # logging.info(f"Model: {model}")
     logging.info(f"From pretrained: {from_pretrained}")
     
 

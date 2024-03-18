@@ -1,25 +1,27 @@
 
 
 
-import sys
-import os
 import argparse
-import pandas as pd
 import logging
+import time
 
 from utils import *
 
 def main():
+    start = time.time()
     # parse arguments
     parser = argparse.ArgumentParser()
 
     
     parser.add_argument("--input-data-folder", type=str, required=False)
-    parser.add_argument("--from-pretrained", type=bool, required=False)
     parser.add_argument("--architecture", type=str, required=False)
-    parser.add_argument("--data-augmentation", type=bool, required=False)
+
+    parser.add_argument("--from-pretrained", action="store_true", required=False)
+    parser.add_argument("--data-augmentation", action="store_true", required=False)
 
     args = parser.parse_args()
+
+    logging.info(args)
 
 
     # check if the input data folder is provided
@@ -36,15 +38,10 @@ def main():
 
 
     model_path = train_model(train_folder, val_folder, architecture=args.architecture,
-                             from_pretrained=args.from_pretrained, epochs=3, data_augmentation=args.data_augmentation)
+                             from_pretrained=args.from_pretrained, epochs=60, data_augmentation=args.data_augmentation)
     # results = evaluate_model(model_path, val_folder)
 
-
-
-
-
-    
-
+    logging.info(f"Total time: {time.time() - start} seconds")
 
 
 if __name__ == "__main__":
