@@ -41,7 +41,9 @@ def main():
                              from_pretrained=args.from_pretrained, epochs=60, data_augmentation=args.data_augmentation)
     # results = evaluate_model(model_path, val_folder)
 
-    logging.info(f"Total time: {time.time() - start} seconds")
+    # log the time it took to run the pipeline in minutes
+    elapsed = (time.time() - start) / 60
+    logging.info(f"Elapsed time: {elapsed:.2f} minutes")
 
 
 if __name__ == "__main__":
