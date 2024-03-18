@@ -8,6 +8,7 @@ import numpy as np
 import torchvision
 from torchvision import datasets, models
 from torchvision.transforms import v2
+
 import matplotlib.pyplot as plt
 import time
 import os
@@ -24,26 +25,26 @@ import pandas as pd
 
 MODELS_FOLDER = "outputs/models"
 
-def load_dataset(train_folder, val_folder):
+def load_dataset(train_folder, val_folder, data_augmentation):
     data_transforms = {
     'train': v2.Compose([
-        v2.RandomRotation(30),
-        v2.RandomHorizontalFlip(),
+            v2.RandomRotation(30) if data_augmentation else v2.RandomRotation(0),
+            v2.RandomHorizontalFlip() if data_augmentation else v2.RandomHorizontalFlip(0),
 
-        # v2.Resize(224),
+        v2.Resize(224),
         v2.ToImage(),
         v2.ToDtype(torch.float32, scale=True),
         v2.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
 
     ]),
     'val': v2.Compose([
-        # v2.Resize(224),
+        v2.Resize(224),
         v2.ToImage(),
         v2.ToDtype(torch.float32, scale=True),
         v2.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
     ]),
     'test': v2.Compose([
-        # v2.Resize(224),
+        v2.Resize(224),
         v2.ToImage(),
         v2.ToDtype(torch.float32, scale=True),
         v2.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
@@ -59,9 +60,7 @@ def load_dataset(train_folder, val_folder):
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    logging.info(f"Classes: {class_names}")
-    logging.info(f"Dataset sizes: {dataset_sizes}")
-    logging.info(f"Device: {device}")
+    logging.info(image_datasets)
 
     return dataloaders, dataset_sizes, class_names, device
 
@@ -143,24 +142,39 @@ def train(model, criterion, optimizer, scheduler, num_epochs, dataloaders, datas
     return model, history
 
 
-def train_model(train_folder, val_folder, from_pretrained=None):
+def update_results_csv(architecture, from_pretrained, data_augmentation, epochs, best_acc, model_path):
+
+    results = pd.DataFrame({"architecture": [architecture], "from_pretrained": [from_pretrained], "data_augmentation": [data_augmentation], "epochs": [epochs], "best_acc": [best_acc], "model_path": [model_path]})
+
+    # read the csv file if it exists, else create a new one
+    if os.path.exists("outputs/results.csv"):
+        old_results = pd.read_csv("outputs/results.csv")
+        results = pd.concat([old_results, results])
+
+    results.to_csv("outputs/results.csv", index=False)
+
+
+
+def train_model(train_folder, val_folder, architecture='resnet18', from_pretrained=False, epochs=25, learning_rate=0.001, data_augmentation=False):
     # load the dataset
-    dataloaders, dataset_sizes, class_names, device = load_dataset(train_folder, val_folder)
-
-    # load the model
-    if from_pretrained:
-        pretrained_weights = "IMAGENET1K_V1"
-        if from_pretrained == "resnet18":
-            model = models.resnet18(weights=pretrained_weights)
-
-        elif from_pretrained == "shufflenet_v2_x1_0":
-            model = models.shufflenet_v2_x1_0(weights=pretrained_weights)
-
-        else:
-            raise ValueError("Invalid model name")
-
+    if data_augmentation:
+        logging.info("Data augmentation enabled")
     else:
-        model = models.resnet18(pretrained=False)
+        logging.info("Data augmentation disabled")
+
+    dataloaders, dataset_sizes, class_names, device = load_dataset(train_folder, val_folder, data_augmentation)
+
+    # load the model    
+    if architecture == "resnet18":
+        from torchvision.models.resnet import ResNet18_Weights
+        model = models.resnet18(weights=ResNet18_Weights.IMAGENET1K_V1 if from_pretrained else None)
+    elif architecture == "shufflenet_v2_x1_0":
+        from torchvision.models.shufflenetv2 import ShuffleNet_V2_X1_0_Weights
+        model = models.shufflenet_v2_x1_0(weights=ShuffleNet_V2_X1_0_Weights.IMAGENET1K_V1 if from_pretrained else None)
+
+    logging.info(f"Model: {model}")
+    logging.info(f"From pretrained: {from_pretrained}")
+    
 
     num_ftrs = model.fc.in_features
     model.fc = nn.Linear(num_ftrs, len(class_names))
@@ -170,31 +184,67 @@ def train_model(train_folder, val_folder, from_pretrained=None):
     criterion = nn.CrossEntropyLoss()
 
     # Observe that all parameters are being optimized
-    optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+    optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
 
     # Decay LR by a factor of 0.1 every 7 epochs
     exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
 
     # train the model
-    model, history = train(model, criterion, optimizer, exp_lr_scheduler, num_epochs=5, dataloaders=dataloaders, dataset_sizes=dataset_sizes, device=device)
+    model, history = train(model, criterion, optimizer, exp_lr_scheduler, num_epochs=epochs, dataloaders=dataloaders, dataset_sizes=dataset_sizes, device=device)
     
-    # save the model into "outputs/pretrained_time/model.pth"
+    # save the model into "outputs/arch_time/model.pth"
     now = time.strftime("%Y-%m-%d_%H-%M-%S")
-    model_path = os.path.join(MODELS_FOLDER, f"{from_pretrained}_{now}", "model.pth")
+    model_path = os.path.join(MODELS_FOLDER, f"{architecture}_{now}", "model.pth")
 
     os.makedirs(os.path.dirname(model_path), exist_ok=True)
     torch.save(model, model_path)
 
+    # plot history and save it into "outputs/pretrained_time/history.png"
+    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    ax[0].plot(history['train']['loss'], label="train")
+    ax[0].plot(history['val']['loss'], label="val")
+    ax[0].set_title("Loss")
+    ax[0].legend()
+    
+    ax[1].plot(history['train']['acc'], label="train")
+    ax[1].plot(history['val']['acc'], label="val")
+    ax[1].set_title("Acc")
+    ax[1].legend()
+
+    plt.savefig(os.path.join(os.path.dirname(model_path), "history.png"))
+
+
+    # save a png with the confusion matrix
+    model.eval()
+    all_preds = []
+    all_labels = []
+    with torch.no_grad():
+        for inputs, labels in dataloaders['val']:
+            inputs = inputs.to(device)
+            labels = labels.to(device)
+
+            outputs = model(inputs)
+            _, preds = torch.max(outputs, 1)
+
+            all_preds.extend(preds.cpu().numpy())
+            all_labels.extend(labels.cpu().numpy())
+
+    cm = confusion_matrix(all_labels, all_preds)
+
+    df_cm = pd.DataFrame(cm, index=class_names, columns=class_names)
+
+    plt.figure(figsize=(10, 7))
+    seaborn.heatmap(df_cm, annot=True)
+    plt.savefig(os.path.join(os.path.dirname(model_path), "confusion_matrix.png"))
+
+
+    # update the results csv
+    update_results_csv(architecture, from_pretrained, data_augmentation, epochs, max(history['val']['acc']), model_path)
+    
+
     logging.info(f"Model saved into {model_path}")   
 
-
     return model_path
-
-
-
-
-
-
 
 
 

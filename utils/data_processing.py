@@ -20,19 +20,29 @@ SEED = 42
 
 def prepare_folders():
 
-    # remove the parent outputs folder if it exists
-    if os.path.exists(OUTPUTS_FOLDER):
-        os.system(f"rm -r {OUTPUTS_FOLDER}")
-
-
-
-    # create the subfolders
-    for folder in [DATASET_FOLDER, MODELS_FOLDER, TRAIN_FOLDER, VAL_FOLDER]:
+    # create the outputs, data and models folders if they don't exist
+    for folder in [OUTPUTS_FOLDER, DATASET_FOLDER, MODELS_FOLDER, TRAIN_FOLDER, VAL_FOLDER]:
         if not os.path.exists(folder):
             os.makedirs(folder)
 
+    
+    # clear data folders
+    for folder in [TRAIN_FOLDER, VAL_FOLDER]:
+        if os.path.exists(folder):
+            shutil.rmtree(folder)
 
+    # create the under_18 and over_18 folders
+    for folder in [TRAIN_FOLDER, VAL_FOLDER]:
+        for c in CLASSES:
+            class_folder = os.path.join(folder, c)
+            if not os.path.exists(class_folder):
+                os.makedirs(class_folder)
 
+    # delete csv file if it exists already
+    data_file = os.path.join(DATASET_FOLDER, "dental-data.csv")
+    if os.path.exists(data_file):
+        os.remove(data_file)
+            
 
 
 def create_csv_file(input_data_folder):
@@ -75,6 +85,8 @@ def create_csv_file(input_data_folder):
 
 
 def load_data_into_folders(data_file):
+
+
     data = pd.read_csv(data_file)
 
     # save pictures into train and val folders, 80% train, 20% val
