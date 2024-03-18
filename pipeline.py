@@ -15,6 +15,7 @@ def main():
 
     
     parser.add_argument("--input_data_folder", type=str, required=True)
+    parser.add_argument("--from_pretrained", type=str, required=False)
 
     args = parser.parse_args()
 
@@ -22,6 +23,11 @@ def main():
     data_file = create_csv_file(args.input_data_folder)
 
     train_folder, val_folder = load_data_into_folders(data_file)
+
+
+    model_path = train_model(train_folder, val_folder, from_pretrained=args.from_pretrained)
+
+    results = evaluate_model(model, val_folder)
 
 
 
