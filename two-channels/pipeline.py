@@ -137,7 +137,7 @@ def main():
 
 if __name__ == "__main__":
     # log into a file
-    # logging.basicConfig(filename='pipeline.log', level=logging.INFO)
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(filename='pipeline.log', level=logging.INFO)
+    # logging.basicConfig(level=logging.INFO)
 
     main()

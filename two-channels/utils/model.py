@@ -43,14 +43,7 @@ def load_dataset(train_folder, val_folder, data_augmentation):
         v2.ToImage(),
         v2.ToDtype(torch.float32, scale=True),
         v2.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-    ]),
-    'test': v2.Compose([
-        v2.Resize(224),
-        v2.ToImage(),
-        v2.ToDtype(torch.float32, scale=True),
-        v2.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-    ]),
-    
+    ])
     }
 
     image_datasets = {x: datasets.ImageFolder(os.path.join(train_folder if x == "train" else val_folder), data_transforms[x]) for x in ['train', 'val']}
@@ -62,6 +55,9 @@ def load_dataset(train_folder, val_folder, data_augmentation):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     # logging.info(image_datasets)
+    # # show shape of the first image
+    # logging.info(next(iter(dataloaders['train']))[0])
+
 
     return dataloaders, dataset_sizes, class_names, device
 
@@ -184,6 +180,7 @@ def train_model(dataloaders, dataset_sizes, class_names, device,
         model = models.__dict__[architecture](weights=weight) if from_pretrained else models.__dict__[architecture]()
         
         logging.info(f"Model: {model}")
+        logging.info(model.conv1.weight.shape)
         if from_pretrained:
             logging.info(f"Model {architecture} loaded with {weight} weights")
         else:
