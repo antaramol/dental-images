@@ -143,9 +143,10 @@ def train(model, criterion, optimizer, scheduler, num_epochs, dataloaders, datas
     return model, history
 
 
-def update_results_csv(architecture, from_pretrained, fixed_feature_extractor, data_augmentation, epochs, best_acc, model_path):
+def update_results_csv(architecture, from_pretrained, weight, fixed_feature_extractor, data_augmentation, epochs, best_acc, model_path):
 
-    results = pd.DataFrame({"architecture": [architecture], "from_pretrained": [from_pretrained], "fixed_feature_extractor": [fixed_feature_extractor],
+    results = pd.DataFrame({"architecture": [architecture], "from_pretrained": [from_pretrained], "weight": [weight],
+                            "fixed_feature_extractor": [fixed_feature_extractor],
                             "data_augmentation": [data_augmentation], "epochs": [epochs], "best_acc": [best_acc], "model_path": [model_path]})
 
     # read the csv file if it exists, else create a new one
@@ -158,7 +159,8 @@ def update_results_csv(architecture, from_pretrained, fixed_feature_extractor, d
 
 
 def train_model(dataloaders, dataset_sizes, class_names, device,
-                 architecture='resnet18', from_pretrained=False, epochs=25, learning_rate=0.001, data_augmentation=False, fixed_feature_extractor=False):
+                 architecture='resnet18', weights='all',
+                 from_pretrained=False, epochs=25, learning_rate=0.001, data_augmentation=False, fixed_feature_extractor=False):
     # load the dataset
     if data_augmentation:
         logging.info("Data augmentation enabled")
@@ -167,101 +169,114 @@ def train_model(dataloaders, dataset_sizes, class_names, device,
 
 
     # load the model    
-    if architecture == "resnet18":
-        from torchvision.models.resnet import ResNet18_Weights
-        model = models.resnet18(weights=ResNet18_Weights.IMAGENET1K_V1 if from_pretrained else None)
-    elif architecture == "resnet34":
-        from torchvision.models.resnet import ResNet34_Weights
-        model = models.resnet34(weights=ResNet34_Weights.IMAGENET1K_V1 if from_pretrained else None)
-    elif architecture == "shufflenet_v2_x1_0":
-        from torchvision.models.shufflenetv2 import ShuffleNet_V2_X1_0_Weights
-        model = models.shufflenet_v2_x1_0(weights=ShuffleNet_V2_X1_0_Weights.IMAGENET1K_V1 if from_pretrained else None)
-    elif architecture == "shufflenet_v2_x0_5":
-        from torchvision.models.shufflenetv2 import ShuffleNet_V2_X0_5_Weights
-        model = models.shufflenet_v2_x0_5(weights=ShuffleNet_V2_X0_5_Weights.IMAGENET1K_V1 if from_pretrained else None)
-    elif architecture == "shufflenet_v2_x1_5":
-        from torchvision.models.shufflenetv2 import ShuffleNet_V2_X1_5_Weights
-        model = models.shufflenet_v2_x1_5(weights=ShuffleNet_V2_X1_5_Weights.IMAGENET1K_V1 if from_pretrained else None)
-    elif architecture == "shufflenet_v2_x2_0":
-        from torchvision.models.shufflenetv2 import ShuffleNet_V2_X2_0_Weights
-        model = models.shufflenet_v2_x2_0(weights=ShuffleNet_V2_X2_0_Weights.IMAGENET1K_V1 if from_pretrained else None)
-
-    # logging.info(f"Model: {model}")
-    logging.info(f"From pretrained: {from_pretrained}")
+    if weights == "all":
+        logging.info(f"Loading all weights for {architecture}")
+        weight_enum = torch.hub.load("pytorch/vision", "get_model_weights", architecture)
+    elif weights is not None:
+        logging.info(f"Loading {weights} weights")
+        weight_enum = [weights]
+    else:
+        logging.info("No weights specified, using default")
+        weight_enum = ["IMAGENET1K_V1"]
+        
+    for weight in weight_enum:
+        logging.info(f"Loading {weight} weights")
+        model = models.__dict__[architecture](weights=weight) if from_pretrained else models.__dict__[architecture]()
+        
+        # logging.info(f"Model: {model}")
+        if from_pretrained:
+            logging.info(f"Model {architecture} loaded with {weight} weights")
+        else:
+            logging.info(f"Model {architecture} loaded without pretrained weights")
 
 
-    if from_pretrained and fixed_feature_extractor:
-        for param in model.parameters():
-            param.requires_grad = False
+        if from_pretrained and fixed_feature_extractor:
+            for param in model.parameters():
+                param.requires_grad = False
+        
+
+
+        try:
+            num_ftrs = model.fc.in_features
+            model.fc = nn.Linear(num_ftrs, len(class_names))
+
+        except AttributeError: # some models have classifier instead of fc
+            num_ftrs = model.classifier[-1].in_features
+            model.classifier[-1] = nn.Linear(num_ftrs, len(class_names))
+        
+
+
+
+
+
     
 
-    num_ftrs = model.fc.in_features
-    model.fc = nn.Linear(num_ftrs, len(class_names))
 
-    model = model.to(device)
+        model = model.to(device)
 
-    criterion = nn.CrossEntropyLoss()
+        criterion = nn.CrossEntropyLoss()
 
-    # Observe that all parameters are being optimized
-    optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
+        # Observe that all parameters are being optimized
+        optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
 
-    # Decay LR by a factor of 0.1 every 7 epochs
-    exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
+        # Decay LR by a factor of 0.1 every 7 epochs
+        exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
 
-    # train the model
-    model, history = train(model, criterion, optimizer, exp_lr_scheduler, num_epochs=epochs, dataloaders=dataloaders, dataset_sizes=dataset_sizes, device=device)
-    
-    # save the model into "outputs/arch_time/model.pth"
-    now = time.strftime("%Y-%m-%d_%H-%M-%S")
-    model_path = os.path.join(MODELS_FOLDER, f"{architecture}_{now}", "model.pth")
+        # train the model
+        model, history = train(model, criterion, optimizer, exp_lr_scheduler, num_epochs=epochs, dataloaders=dataloaders, dataset_sizes=dataset_sizes, device=device)
+        
+        # save the model into "outputs/arch_time/model.pth"
+        now = time.strftime("%Y-%m-%d_%H-%M-%S")
+        model_path = os.path.join(MODELS_FOLDER, f"{architecture}_{now}", "model.pth")
 
-    os.makedirs(os.path.dirname(model_path), exist_ok=True)
-    torch.save(model, model_path)
+        os.makedirs(os.path.dirname(model_path), exist_ok=True)
+        torch.save(model, model_path)
 
-    # plot history and save it into "outputs/pretrained_time/history.png"
-    fig, ax = plt.subplots(1, 2, figsize=(10, 5))
-    ax[0].plot(history['train']['loss'], label="train")
-    ax[0].plot(history['val']['loss'], label="val")
-    ax[0].set_title("Loss")
-    ax[0].legend()
-    
-    ax[1].plot(history['train']['acc'], label="train")
-    ax[1].plot(history['val']['acc'], label="val")
-    ax[1].set_title("Acc")
-    ax[1].legend()
+        # plot history and save it into "outputs/pretrained_time/history.png"
+        fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+        ax[0].plot(history['train']['loss'], label="train")
+        ax[0].plot(history['val']['loss'], label="val")
+        ax[0].set_title("Loss")
+        ax[0].legend()
+        
+        ax[1].plot(history['train']['acc'], label="train")
+        ax[1].plot(history['val']['acc'], label="val")
+        ax[1].set_title("Acc")
+        ax[1].legend()
 
-    plt.savefig(os.path.join(os.path.dirname(model_path), "history.png"))
+        plt.savefig(os.path.join(os.path.dirname(model_path), "history.png"))
 
 
-    # save a png with the confusion matrix
-    model.eval()
-    all_preds = []
-    all_labels = []
-    with torch.no_grad():
-        for inputs, labels in dataloaders['val']:
-            inputs = inputs.to(device)
-            labels = labels.to(device)
+        # save a png with the confusion matrix
+        model.eval()
+        all_preds = []
+        all_labels = []
+        with torch.no_grad():
+            for inputs, labels in dataloaders['val']:
+                inputs = inputs.to(device)
+                labels = labels.to(device)
 
-            outputs = model(inputs)
-            _, preds = torch.max(outputs, 1)
+                outputs = model(inputs)
+                _, preds = torch.max(outputs, 1)
 
-            all_preds.extend(preds.cpu().numpy())
-            all_labels.extend(labels.cpu().numpy())
+                all_preds.extend(preds.cpu().numpy())
+                all_labels.extend(labels.cpu().numpy())
 
-    cm = confusion_matrix(all_labels, all_preds)
+        cm = confusion_matrix(all_labels, all_preds)
 
-    df_cm = pd.DataFrame(cm, index=class_names, columns=class_names)
+        df_cm = pd.DataFrame(cm, index=class_names, columns=class_names)
 
-    plt.figure(figsize=(10, 7))
-    seaborn.heatmap(df_cm, annot=True)
-    plt.savefig(os.path.join(os.path.dirname(model_path), "confusion_matrix.png"))
+        plt.figure(figsize=(10, 7))
+        seaborn.heatmap(df_cm, annot=True)
+        plt.savefig(os.path.join(os.path.dirname(model_path), "confusion_matrix.png"))
 
 
-    # update the results csv
-    update_results_csv(architecture, from_pretrained, fixed_feature_extractor, data_augmentation, epochs, max(history['val']['acc']), model_path)
-    
+        # update the results csv
+        update_results_csv(architecture, from_pretrained, str(weight).split(".")[-1],
+                           fixed_feature_extractor, data_augmentation, epochs, max(history['val']['acc']), model_path)
+        
 
-    logging.info(f"Model saved into {model_path}")   
+        logging.info(f"Model saved into {model_path}")   
 
     return model_path
 

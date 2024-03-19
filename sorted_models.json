@@ -1,0 +1,692 @@
+[
+    [
+        "regnet_y_128gf_IMAGENET1K_SWAG_E2E_V1",
+        {
+            "num_params": 644812894
+        }
+    ],
+    [
+        "regnet_y_128gf_IMAGENET1K_SWAG_LINEAR_V1",
+        {
+            "num_params": 644812894
+        }
+    ],
+    [
+        "vit_h_14_IMAGENET1K_SWAG_E2E_V1",
+        {
+            "num_params": 633470440
+        }
+    ],
+    [
+        "vit_h_14_IMAGENET1K_SWAG_LINEAR_V1",
+        {
+            "num_params": 632045800
+        }
+    ],
+    [
+        "vit_l_32_IMAGENET1K_V1",
+        {
+            "num_params": 306535400
+        }
+    ],
+    [
+        "vit_l_16_IMAGENET1K_SWAG_E2E_V1",
+        {
+            "num_params": 305174504
+        }
+    ],
+    [
+        "vit_l_16_IMAGENET1K_V1",
+        {
+            "num_params": 304326632
+        }
+    ],
+    [
+        "vit_l_16_IMAGENET1K_SWAG_LINEAR_V1",
+        {
+            "num_params": 304326632
+        }
+    ],
+    [
+        "convnext_large_IMAGENET1K_V1",
+        {
+            "num_params": 197767336
+        }
+    ],
+    [
+        "regnet_y_32gf_IMAGENET1K_V1",
+        {
+            "num_params": 145046770
+        }
+    ],
+    [
+        "regnet_y_32gf_IMAGENET1K_V2",
+        {
+            "num_params": 145046770
+        }
+    ],
+    [
+        "regnet_y_32gf_IMAGENET1K_SWAG_E2E_V1",
+        {
+            "num_params": 145046770
+        }
+    ],
+    [
+        "regnet_y_32gf_IMAGENET1K_SWAG_LINEAR_V1",
+        {
+            "num_params": 145046770
+        }
+    ],
+    [
+        "vgg19_bn_IMAGENET1K_V1",
+        {
+            "num_params": 143678248
+        }
+    ],
+    [
+        "vgg19_IMAGENET1K_V1",
+        {
+            "num_params": 143667240
+        }
+    ],
+    [
+        "vgg16_bn_IMAGENET1K_V1",
+        {
+            "num_params": 138365992
+        }
+    ],
+    [
+        "vgg16_IMAGENET1K_V1",
+        {
+            "num_params": 138357544
+        }
+    ],
+    [
+        "vgg16_IMAGENET1K_FEATURES",
+        {
+            "num_params": 138357544
+        }
+    ],
+    [
+        "vgg13_bn_IMAGENET1K_V1",
+        {
+            "num_params": 133053736
+        }
+    ],
+    [
+        "vgg13_IMAGENET1K_V1",
+        {
+            "num_params": 133047848
+        }
+    ],
+    [
+        "vgg11_bn_IMAGENET1K_V1",
+        {
+            "num_params": 132868840
+        }
+    ],
+    [
+        "vgg11_IMAGENET1K_V1",
+        {
+            "num_params": 132863336
+        }
+    ],
+    [
+        "wide_resnet101_2_IMAGENET1K_V1",
+        {
+            "num_params": 126886696
+        }
+    ],
+    [
+        "wide_resnet101_2_IMAGENET1K_V2",
+        {
+            "num_params": 126886696
+        }
+    ],
+    [
+        "efficientnet_v2_l_IMAGENET1K_V1",
+        {
+            "num_params": 118515272
+        }
+    ],
+    [
+        "regnet_x_32gf_IMAGENET1K_V1",
+        {
+            "num_params": 107811560
+        }
+    ],
+    [
+        "regnet_x_32gf_IMAGENET1K_V2",
+        {
+            "num_params": 107811560
+        }
+    ],
+    [
+        "resnext101_32x8d_IMAGENET1K_V1",
+        {
+            "num_params": 88791336
+        }
+    ],
+    [
+        "resnext101_32x8d_IMAGENET1K_V2",
+        {
+            "num_params": 88791336
+        }
+    ],
+    [
+        "convnext_base_IMAGENET1K_V1",
+        {
+            "num_params": 88591464
+        }
+    ],
+    [
+        "vit_b_32_IMAGENET1K_V1",
+        {
+            "num_params": 88224232
+        }
+    ],
+    [
+        "swin_v2_b_IMAGENET1K_V1",
+        {
+            "num_params": 87930848
+        }
+    ],
+    [
+        "swin_b_IMAGENET1K_V1",
+        {
+            "num_params": 87768224
+        }
+    ],
+    [
+        "vit_b_16_IMAGENET1K_SWAG_E2E_V1",
+        {
+            "num_params": 86859496
+        }
+    ],
+    [
+        "vit_b_16_IMAGENET1K_V1",
+        {
+            "num_params": 86567656
+        }
+    ],
+    [
+        "vit_b_16_IMAGENET1K_SWAG_LINEAR_V1",
+        {
+            "num_params": 86567656
+        }
+    ],
+    [
+        "regnet_y_16gf_IMAGENET1K_V1",
+        {
+            "num_params": 83590140
+        }
+    ],
+    [
+        "regnet_y_16gf_IMAGENET1K_V2",
+        {
+            "num_params": 83590140
+        }
+    ],
+    [
+        "regnet_y_16gf_IMAGENET1K_SWAG_E2E_V1",
+        {
+            "num_params": 83590140
+        }
+    ],
+    [
+        "regnet_y_16gf_IMAGENET1K_SWAG_LINEAR_V1",
+        {
+            "num_params": 83590140
+        }
+    ],
+    [
+        "resnext101_64x4d_IMAGENET1K_V1",
+        {
+            "num_params": 83455272
+        }
+    ],
+    [
+        "wide_resnet50_2_IMAGENET1K_V1",
+        {
+            "num_params": 68883240
+        }
+    ],
+    [
+        "wide_resnet50_2_IMAGENET1K_V2",
+        {
+            "num_params": 68883240
+        }
+    ],
+    [
+        "efficientnet_b7_IMAGENET1K_V1",
+        {
+            "num_params": 66347960
+        }
+    ],
+    [
+        "alexnet_IMAGENET1K_V1",
+        {
+            "num_params": 61100840
+        }
+    ],
+    [
+        "resnet152_IMAGENET1K_V1",
+        {
+            "num_params": 60192808
+        }
+    ],
+    [
+        "resnet152_IMAGENET1K_V2",
+        {
+            "num_params": 60192808
+        }
+    ],
+    [
+        "regnet_x_16gf_IMAGENET1K_V1",
+        {
+            "num_params": 54278536
+        }
+    ],
+    [
+        "regnet_x_16gf_IMAGENET1K_V2",
+        {
+            "num_params": 54278536
+        }
+    ],
+    [
+        "efficientnet_v2_m_IMAGENET1K_V1",
+        {
+            "num_params": 54139356
+        }
+    ],
+    [
+        "convnext_small_IMAGENET1K_V1",
+        {
+            "num_params": 50223688
+        }
+    ],
+    [
+        "swin_v2_s_IMAGENET1K_V1",
+        {
+            "num_params": 49737442
+        }
+    ],
+    [
+        "swin_s_IMAGENET1K_V1",
+        {
+            "num_params": 49606258
+        }
+    ],
+    [
+        "resnet101_IMAGENET1K_V1",
+        {
+            "num_params": 44549160
+        }
+    ],
+    [
+        "resnet101_IMAGENET1K_V2",
+        {
+            "num_params": 44549160
+        }
+    ],
+    [
+        "efficientnet_b6_IMAGENET1K_V1",
+        {
+            "num_params": 43040704
+        }
+    ],
+    [
+        "regnet_x_8gf_IMAGENET1K_V1",
+        {
+            "num_params": 39572648
+        }
+    ],
+    [
+        "regnet_x_8gf_IMAGENET1K_V2",
+        {
+            "num_params": 39572648
+        }
+    ],
+    [
+        "regnet_y_8gf_IMAGENET1K_V1",
+        {
+            "num_params": 39381472
+        }
+    ],
+    [
+        "regnet_y_8gf_IMAGENET1K_V2",
+        {
+            "num_params": 39381472
+        }
+    ],
+    [
+        "maxvit_t_IMAGENET1K_V1",
+        {
+            "num_params": 30919624
+        }
+    ],
+    [
+        "efficientnet_b5_IMAGENET1K_V1",
+        {
+            "num_params": 30389784
+        }
+    ],
+    [
+        "densenet161_IMAGENET1K_V1",
+        {
+            "num_params": 28681000
+        }
+    ],
+    [
+        "convnext_tiny_IMAGENET1K_V1",
+        {
+            "num_params": 28589128
+        }
+    ],
+    [
+        "swin_v2_t_IMAGENET1K_V1",
+        {
+            "num_params": 28351570
+        }
+    ],
+    [
+        "swin_t_IMAGENET1K_V1",
+        {
+            "num_params": 28288354
+        }
+    ],
+    [
+        "inception_v3_IMAGENET1K_V1",
+        {
+            "num_params": 27161264
+        }
+    ],
+    [
+        "resnet50_IMAGENET1K_V1",
+        {
+            "num_params": 25557032
+        }
+    ],
+    [
+        "resnet50_IMAGENET1K_V2",
+        {
+            "num_params": 25557032
+        }
+    ],
+    [
+        "resnext50_32x4d_IMAGENET1K_V1",
+        {
+            "num_params": 25028904
+        }
+    ],
+    [
+        "resnext50_32x4d_IMAGENET1K_V2",
+        {
+            "num_params": 25028904
+        }
+    ],
+    [
+        "resnet34_IMAGENET1K_V1",
+        {
+            "num_params": 21797672
+        }
+    ],
+    [
+        "efficientnet_v2_s_IMAGENET1K_V1",
+        {
+            "num_params": 21458488
+        }
+    ],
+    [
+        "densenet201_IMAGENET1K_V1",
+        {
+            "num_params": 20013928
+        }
+    ],
+    [
+        "regnet_y_3_2gf_IMAGENET1K_V1",
+        {
+            "num_params": 19436338
+        }
+    ],
+    [
+        "regnet_y_3_2gf_IMAGENET1K_V2",
+        {
+            "num_params": 19436338
+        }
+    ],
+    [
+        "efficientnet_b4_IMAGENET1K_V1",
+        {
+            "num_params": 19341616
+        }
+    ],
+    [
+        "regnet_x_3_2gf_IMAGENET1K_V1",
+        {
+            "num_params": 15296552
+        }
+    ],
+    [
+        "regnet_x_3_2gf_IMAGENET1K_V2",
+        {
+            "num_params": 15296552
+        }
+    ],
+    [
+        "densenet169_IMAGENET1K_V1",
+        {
+            "num_params": 14149480
+        }
+    ],
+    [
+        "efficientnet_b3_IMAGENET1K_V1",
+        {
+            "num_params": 12233232
+        }
+    ],
+    [
+        "resnet18_IMAGENET1K_V1",
+        {
+            "num_params": 11689512
+        }
+    ],
+    [
+        "regnet_y_1_6gf_IMAGENET1K_V1",
+        {
+            "num_params": 11202430
+        }
+    ],
+    [
+        "regnet_y_1_6gf_IMAGENET1K_V2",
+        {
+            "num_params": 11202430
+        }
+    ],
+    [
+        "regnet_x_1_6gf_IMAGENET1K_V1",
+        {
+            "num_params": 9190136
+        }
+    ],
+    [
+        "regnet_x_1_6gf_IMAGENET1K_V2",
+        {
+            "num_params": 9190136
+        }
+    ],
+    [
+        "efficientnet_b2_IMAGENET1K_V1",
+        {
+            "num_params": 9109994
+        }
+    ],
+    [
+        "densenet121_IMAGENET1K_V1",
+        {
+            "num_params": 7978856
+        }
+    ],
+    [
+        "efficientnet_b1_IMAGENET1K_V1",
+        {
+            "num_params": 7794184
+        }
+    ],
+    [
+        "efficientnet_b1_IMAGENET1K_V2",
+        {
+            "num_params": 7794184
+        }
+    ],
+    [
+        "shufflenet_v2_x2_0_IMAGENET1K_V1",
+        {
+            "num_params": 7393996
+        }
+    ],
+    [
+        "regnet_x_800mf_IMAGENET1K_V1",
+        {
+            "num_params": 7259656
+        }
+    ],
+    [
+        "regnet_x_800mf_IMAGENET1K_V2",
+        {
+            "num_params": 7259656
+        }
+    ],
+    [
+        "googlenet_IMAGENET1K_V1",
+        {
+            "num_params": 6624904
+        }
+    ],
+    [
+        "regnet_y_800mf_IMAGENET1K_V1",
+        {
+            "num_params": 6432512
+        }
+    ],
+    [
+        "regnet_y_800mf_IMAGENET1K_V2",
+        {
+            "num_params": 6432512
+        }
+    ],
+    [
+        "mnasnet1_3_IMAGENET1K_V1",
+        {
+            "num_params": 6282256
+        }
+    ],
+    [
+        "regnet_x_400mf_IMAGENET1K_V1",
+        {
+            "num_params": 5495976
+        }
+    ],
+    [
+        "regnet_x_400mf_IMAGENET1K_V2",
+        {
+            "num_params": 5495976
+        }
+    ],
+    [
+        "mobilenet_v3_large_IMAGENET1K_V1",
+        {
+            "num_params": 5483032
+        }
+    ],
+    [
+        "mobilenet_v3_large_IMAGENET1K_V2",
+        {
+            "num_params": 5483032
+        }
+    ],
+    [
+        "efficientnet_b0_IMAGENET1K_V1",
+        {
+            "num_params": 5288548
+        }
+    ],
+    [
+        "mnasnet1_0_IMAGENET1K_V1",
+        {
+            "num_params": 4383312
+        }
+    ],
+    [
+        "regnet_y_400mf_IMAGENET1K_V1",
+        {
+            "num_params": 4344144
+        }
+    ],
+    [
+        "regnet_y_400mf_IMAGENET1K_V2",
+        {
+            "num_params": 4344144
+        }
+    ],
+    [
+        "mobilenet_v2_IMAGENET1K_V1",
+        {
+            "num_params": 3504872
+        }
+    ],
+    [
+        "mobilenet_v2_IMAGENET1K_V2",
+        {
+            "num_params": 3504872
+        }
+    ],
+    [
+        "shufflenet_v2_x1_5_IMAGENET1K_V1",
+        {
+            "num_params": 3503624
+        }
+    ],
+    [
+        "mnasnet0_75_IMAGENET1K_V1",
+        {
+            "num_params": 3170208
+        }
+    ],
+    [
+        "mobilenet_v3_small_IMAGENET1K_V1",
+        {
+            "num_params": 2542856
+        }
+    ],
+    [
+        "shufflenet_v2_x1_0_IMAGENET1K_V1",
+        {
+            "num_params": 2278604
+        }
+    ],
+    [
+        "mnasnet0_5_IMAGENET1K_V1",
+        {
+            "num_params": 2218512
+        }
+    ],
+    [
+        "shufflenet_v2_x0_5_IMAGENET1K_V1",
+        {
+            "num_params": 1366792
+        }
+    ],
+    [
+        "squeezenet1_0_IMAGENET1K_V1",
+        {
+            "num_params": 1248424
+        }
+    ],
+    [
+        "squeezenet1_1_IMAGENET1K_V1",
+        {
+            "num_params": 1235496
+        }
+    ]
+]

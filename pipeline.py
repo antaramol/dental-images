@@ -23,6 +23,7 @@ def main():
     parser.add_argument("--data-augmentation", action="store_true", required=False)
     parser.add_argument("--fixed-feature-extractor", action="store_true", required=False)
     parser.add_argument("--k-fold", type=int, required=False)
+    parser.add_argument("--weights", type=str, required=False)
 
 
     args = parser.parse_args()
@@ -43,14 +44,14 @@ def main():
         data_file = create_csv_file(args.input_data_folder)
 
 
-        k_fold_folders = load_data_into_k_fold_folders(data_file, k=args.k_fold)
-
-        
-        # train_folder, val_folder = load_data_into_folders(data_file)
+        if args.k_fold is not None:
+            k_fold_folders = load_data_into_k_fold_folders(data_file, k=args.k_fold)
+        else:
+            train_folder, val_folder = load_data_into_folders(data_file)
 
     # check if the k-fold folders variable is defined
-    if "k_fold_folders" not in locals():
-        k_fold_folders = [os.path.join(DATASET_FOLDER, f"k_fold_{i}") for i in range(args.k_fold)]
+    # if "k_fold_folders" not in locals():
+    #     k_fold_folders = [os.path.join(DATASET_FOLDER, f"k_fold_{i}") for i in range(args.k_fold)]
 
 
 
@@ -71,7 +72,8 @@ def main():
 
 
             model_path = train_model(dataloaders, dataset_sizes, class_names, device,
-                                     architecture=args.architecture, from_pretrained=args.from_pretrained, epochs=100, data_augmentation=args.data_augmentation, fixed_feature_extractor=args.fixed_feature_extractor)
+                                     architecture=args.architecture, weights=args.weights,
+                                     from_pretrained=args.from_pretrained, epochs=100, data_augmentation=args.data_augmentation, fixed_feature_extractor=args.fixed_feature_extractor)
             logging.info(f"Model path: {model_path}")
 
             accuracy, predictions, labels = evaluate_model(model_path, dataloaders, device)
@@ -110,20 +112,18 @@ def main():
         k_fold_results.to_csv(os.path.join(OUTPUTS_FOLDER, "k_fold_results.csv"), index=False)
 
     else:
-        train_folder = os.path.join(k_fold_folders[0], "train")
-        val_folder = os.path.join(k_fold_folders[0], "val")
-
-        # train the model on the train folder
-        model_path = train_model(train_folder, val_folder, architecture=args.architecture,
-                                 from_pretrained=args.from_pretrained, epochs=3, data_augmentation=args.data_augmentation, fixed_feature_extractor=args.fixed_feature_extractor)
-        
-        logging.info(f"Model path: {model_path}")
 
         dataloaders, dataset_sizes, class_names, device = load_dataset(train_folder, val_folder, args.data_augmentation)
 
-        accuracy, predictions, labels = evaluate_model(model_path, dataloaders, device)
-
-        logging.info(f"Accuracy: {accuracy}")
+        # train the model on the train folder
+        try:
+            model_path = train_model(dataloaders, dataset_sizes, class_names, device,
+                                 architecture=args.architecture, weights=args.weights,
+                                 from_pretrained=args.from_pretrained, epochs=60, data_augmentation=args.data_augmentation, fixed_feature_extractor=args.fixed_feature_extractor)
+        except Exception as e:
+            logging.error(f"Error: {e}")
+            return
+        logging.info(f"Model path: {model_path}")
 
 
     # log the time it took to run the pipeline in minutes
@@ -136,5 +136,8 @@ def main():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
+    # log into a file
+    logging.basicConfig(filename='pipeline.log', level=logging.INFO)
+    # logging.basicConfig(level=logging.INFO)
+
     main()
