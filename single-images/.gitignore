@@ -164,4 +164,6 @@ UP_DOWN_stadiazione_CH_gimp/
 outputs_single_images/
 outputs_single_images_k_fold/
 outputs_single_images_weights/
+outputs_single_images_weights_default_transforms/
+
 pipeline.log

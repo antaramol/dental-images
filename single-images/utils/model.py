@@ -25,38 +25,23 @@ import seaborn
 import pandas as pd
 
 
-def load_dataset(train_folder, val_folder, data_augmentation):
-    # logging.info(f"Loading dataset from {train_folder} and {val_folder}")
+def load_dataset(data_folder, model_transforms):
+
     data_transforms = {
-    'train': v2.Compose([
-            v2.RandomRotation(30) if data_augmentation else v2.RandomRotation(0),
-            v2.RandomHorizontalFlip() if data_augmentation else v2.RandomHorizontalFlip(0),
-
-        v2.Resize(224),
-        v2.ToImage(),
-        v2.ToDtype(torch.float32, scale=True),
-        v2.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-
-    ]),
-    'val': v2.Compose([
-        v2.Resize(224),
-        v2.ToImage(),
-        v2.ToDtype(torch.float32, scale=True),
-        v2.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-    ]),
-    'test': v2.Compose([
-        v2.Resize(224),
-        v2.ToImage(),
-        v2.ToDtype(torch.float32, scale=True),
-        v2.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-    ]),
-    
+        'train': model_transforms,
+        'val': model_transforms
     }
 
-    image_datasets = {x: datasets.ImageFolder(os.path.join(train_folder if x == "train" else val_folder), data_transforms[x]) for x in ['train', 'val']}
-    dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=4, shuffle=True, num_workers=4) for x in ['train', 'val']}
-
+    image_datasets = {x: datasets.ImageFolder(os.path.join(data_folder, x),
+                                                data_transforms[x])
+                        for x in ['train', 'val']}
+    
+    dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=2,
+                                                shuffle=True, num_workers=4)
+                    for x in ['train', 'val']}
     dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
+    
+
     class_names = image_datasets['train'].classes
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -158,15 +143,10 @@ def update_results_csv(architecture, from_pretrained, weight, fixed_feature_extr
 
 
 
-def train_model(dataloaders, dataset_sizes, class_names, device,
+def train_model(data_folder,
                  architecture='resnet18', weights='all',
                  from_pretrained=False, epochs=25, learning_rate=0.001, data_augmentation=False, fixed_feature_extractor=False):
-    # load the dataset
-    if data_augmentation:
-        logging.info("Data augmentation enabled")
-    else:
-        logging.info("Data augmentation disabled")
-
+    
 
     # load the model    
     if weights == "all":
@@ -193,6 +173,13 @@ def train_model(dataloaders, dataset_sizes, class_names, device,
         if from_pretrained and fixed_feature_extractor:
             for param in model.parameters():
                 param.requires_grad = False
+
+
+        # load the dataset
+
+        model_transforms = weight.transforms()
+
+        dataloaders, dataset_sizes, class_names, device = load_dataset(data_folder, model_transforms)
         
 
 
@@ -205,18 +192,19 @@ def train_model(dataloaders, dataset_sizes, class_names, device,
             try:
                 if isinstance(model.classifier, torch.nn.Sequential):
                     num_ftrs = model.classifier[-1].in_features
-                    model.classifier[-1] = torch.nn.Linear(num_ftrs, 2)
+                    model.classifier[-1] = torch.nn.Linear(num_ftrs, len(class_names))
                 else:
                     num_ftrs = model.classifier.in_features
-                model.classifier = torch.nn.Linear(num_ftrs, 2)
+                    model.classifier = torch.nn.Linear(num_ftrs, len(class_names))
             except:
                 # check if head is a list or a single layer
                 try:
                     num_ftrs = model.head.in_features
-                    model.head = torch.nn.Linear(num_ftrs, 2)
+                    model.head = torch.nn.Linear(num_ftrs, len(class_names))
                 except:
                     num_ftrs = model.heads[-1].in_features
-                    model.heads[-1] = torch.nn.Linear(num_ftrs, 2)
+                    model.heads[-1] = torch.nn.Linear(num_ftrs, len(class_names))
+
 
         
 

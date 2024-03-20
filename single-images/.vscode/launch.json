@@ -17,7 +17,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/pipeline.py",
             // "args": ["--architecture", "resnet18", "--from-pretrained"],
-            "args": ["--architecture", "inception_v3", "--from-pretrained", "--weights", "all"], //, "--input-data-folder", "UP_DOWN_stadiazione_CH_gimp"],
+            "args": ["--architecture", "alexnet", "--from-pretrained", "--data-augmentation", "--weights", "all"], //, "--input-data-folder", "UP_DOWN_stadiazione_CH_gimp"],
             "console": "integratedTerminal"
         },
         {
