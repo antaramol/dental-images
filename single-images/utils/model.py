@@ -25,12 +25,46 @@ import seaborn
 import pandas as pd
 
 
-def load_dataset(data_folder, model_transforms):
+def load_dataset(data_folder, data_augmentation):
 
+    ## Gray scale images
     data_transforms = {
-        'train': model_transforms,
-        'val': model_transforms
+        'train': v2.Compose([
+            v2.RandomRotation(30) if data_augmentation else v2.RandomRotation(0),
+            v2.RandomHorizontalFlip() if data_augmentation else v2.RandomHorizontalFlip(0),
+            v2.Resize(224),
+            v2.Grayscale(num_output_channels=1),
+            v2.ToImage(),
+            v2.ToDtype(torch.float32, scale=True),
+            v2.Normalize(mean=[0.485], std=[0.229])
+        ]),
+        'val': v2.Compose([
+            v2.Resize(224),
+            v2.Grayscale(num_output_channels=1),
+            v2.ToImage(),
+            v2.ToDtype(torch.float32, scale=True),
+            v2.Normalize(mean=[0.485], std=[0.229])
+        ]),
     }
+
+    ## RGB images
+    # data_transforms = {
+    #     'train': v2.Compose([
+    #         v2.RandomRotation(30) if data_augmentation else v2.RandomRotation(0),
+    #         v2.RandomHorizontalFlip() if data_augmentation else v2.RandomHorizontalFlip(0),
+    #         v2.Resize(224),
+    #         v2.ToImage(),
+    #         v2.ToDtype(torch.float32, scale=True),
+    #         v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    #     ]),
+    #     'val': v2.Compose([
+    #         v2.Resize(224),
+    #         v2.ToImage(),
+    #         v2.ToDtype(torch.float32, scale=True),
+    #         v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    #     ]),
+    # }
+
 
     image_datasets = {x: datasets.ImageFolder(os.path.join(data_folder, x),
                                                 data_transforms[x])
@@ -46,12 +80,12 @@ def load_dataset(data_folder, model_transforms):
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    logging.info(image_datasets)
-    # show first image shape
-    inputs, classes = next(iter(dataloaders['train']))
-    logging.info(f"First image shape: {inputs[0].shape}")
+    # logging.info(image_datasets)
+    # # show first image shape
+    # inputs, classes = next(iter(dataloaders['train']))
+    # logging.info(f"First image shape: {inputs[0].shape}")
     
-    logging.info(inputs[0])
+    # logging.info(inputs[0])
 
     return dataloaders, dataset_sizes, class_names, device
 
@@ -65,7 +99,7 @@ def train(model, criterion, optimizer, scheduler, num_epochs, dataloaders, datas
     best_acc = 0.0
 
     for epoch in range(num_epochs):
-        logging.info('Epoch {}/{}'.format(epoch, num_epochs - 1))
+        logging.info('Epoch {}/{}'.format(epoch+1, num_epochs))
         logging.info('-' * 10)
 
         # Each epoch has a training and validation phase
@@ -152,6 +186,12 @@ def train_model(data_folder,
                  architecture='resnet18', weights='all',
                  from_pretrained=False, epochs=25, learning_rate=0.001, data_augmentation=False, fixed_feature_extractor=False):
     
+    # load the dataset
+
+
+    dataloaders, dataset_sizes, class_names, device = load_dataset(data_folder, data_augmentation)
+        
+    
 
     # load the model    
     if weights == "all":
@@ -180,12 +220,29 @@ def train_model(data_folder,
                 param.requires_grad = False
 
 
-        # load the dataset
-
-        model_transforms = weight.transforms()
-
-        dataloaders, dataset_sizes, class_names, device = load_dataset(data_folder, model_transforms)
         
+
+        try:
+            conv_weight = model.conv1.weight
+            model.conv1.in_channels = 1
+
+            model.conv1.weight = torch.nn.Parameter(conv_weight.sum(dim=1, keepdim=True))
+        except:
+            try:
+                conv_weight = model.features[0].weight
+                model.features[0].in_channels = 1
+                model.features[0].weight = torch.nn.Parameter(conv_weight.sum(dim=1, keepdim=True))
+            except: # regnet
+                try:
+                    conv_weight = model.stem[0].weight
+                    model.stem[0].in_channels = 1
+                    model.stem[0].weight = torch.nn.Parameter(conv_weight.sum(dim=1, keepdim=True))
+                except: # mobilenet
+                    conv_weight = model.features[0][0].weight
+                    model.features[0][0].in_channels = 1
+                    model.features[0][0].weight = torch.nn.Parameter(conv_weight.sum(dim=1, keepdim=True))
+
+        # logging.info(model(torch.rand(1, 1, 224, 224)).shape)
 
 
         try:
