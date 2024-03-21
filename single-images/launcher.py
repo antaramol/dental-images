@@ -18,10 +18,10 @@ already_tested = ['alexnet', 'convnext_tiny', 'convnext_small', 'convnext_base',
        'convnext_large', 'densenet121', 'densenet161', 'densenet169',
        'densenet201', 'efficientnet_b0', 'efficientnet_b1',
        'efficientnet_b2', 'efficientnet_b3', 'efficientnet_b4',
-       'efficientnet_b5', 'efficientnet_b6']
+       'efficientnet_b5', 'efficientnet_b6', 'efficientnet_b7']
 
-pretrained_models = [model for model in pretrained_models if model not in already_tested]
-
+# pretrained_models = [model for model in pretrained_models if model not in already_tested]
+pretrained_models = ['vit_h_14', 'inception_v3', 'squeezenet1_0', 'squeezenet1_1']
 
 for architecture in pretrained_models:
 # for architecture in ["alexnet", "resnet18"]:

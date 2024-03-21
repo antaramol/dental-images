@@ -121,7 +121,7 @@ def main():
                                  architecture=args.architecture, weights=args.weights,
                                  from_pretrained=args.from_pretrained, epochs=60, data_augmentation=args.data_augmentation, fixed_feature_extractor=args.fixed_feature_extractor)
         except Exception as e:
-            logging.error(f"Error: {e}")
+            logging.error(f"{e}")
             return
         logging.info(f"Model path: {model_path}")
 

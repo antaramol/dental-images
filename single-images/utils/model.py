@@ -36,7 +36,7 @@ def load_dataset(data_folder, model_transforms):
                                                 data_transforms[x])
                         for x in ['train', 'val']}
     
-    dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=2,
+    dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=4,
                                                 shuffle=True, num_workers=4)
                     for x in ['train', 'val']}
     dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
@@ -46,7 +46,12 @@ def load_dataset(data_folder, model_transforms):
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    # logging.info(image_datasets)
+    logging.info(image_datasets)
+    # show first image shape
+    inputs, classes = next(iter(dataloaders['train']))
+    logging.info(f"First image shape: {inputs[0].shape}")
+    
+    logging.info(inputs[0])
 
     return dataloaders, dataset_sizes, class_names, device
 
@@ -202,8 +207,12 @@ def train_model(data_folder,
                     num_ftrs = model.head.in_features
                     model.head = torch.nn.Linear(num_ftrs, len(class_names))
                 except:
-                    num_ftrs = model.heads[-1].in_features
-                    model.heads[-1] = torch.nn.Linear(num_ftrs, len(class_names))
+                    try:
+                        num_ftrs = model.heads[-1].in_features
+                        model.heads[-1] = torch.nn.Linear(num_ftrs, len(class_names))
+                    except: # special case squeezenet
+                        num_ftrs = model.classifier[1].in_channels
+                        model.classifier[1] = torch.nn.Conv2d(num_ftrs, len(class_names), kernel_size=(1, 1))
 
 
         
