@@ -6,7 +6,7 @@ import logging
 import shutil
 import numpy as np
 
-OUTPUTS_FOLDER = "outputs_single_images_weights"
+OUTPUTS_FOLDER = "outputs_2d"
 DATASET_FOLDER = OUTPUTS_FOLDER + "/data"
 MODELS_FOLDER = OUTPUTS_FOLDER + "/models"
 
@@ -79,24 +79,31 @@ def load_data_into_folders(data_file):
     # save pictures into train and val folders, 80% train, 20% val
     # each folder should have a subfolder for each class (under 18 and over 18)
 
-    # shuffle the data
-    data = data.sample(frac=1, random_state=SEED)
+    unique_subjects = data["subject_id"].unique()
 
-    # split the data into train and val
-    train_data = data.sample(frac=0.8, random_state=SEED)
-    val_data = data.drop(train_data.index)
+    # shuffle the subjects
+    np.random.seed(SEED)
+    np.random.shuffle(unique_subjects)
 
-    # copy the images to the train and val folders
-    for folder, df in zip([TRAIN_FOLDER, VAL_FOLDER], [train_data, val_data]):
-        for c in CLASSES:
-            class_folder = os.path.join(folder, c)
-            if not os.path.exists(class_folder):
-                os.makedirs(class_folder)
+    # split the subjects into train and val
+    train_subjects = unique_subjects[:int(0.8 * len(unique_subjects))]
+    val_subjects = unique_subjects[int(0.8 * len(unique_subjects)):]
 
-        for index, row in df.iterrows():
-            image_path = row["image"]
-            class_folder = os.path.join(folder, "under_18" if row["under_18"] else "over_18")
-            shutil.copy(image_path, class_folder)
+    # copy the images to the train and val subfolders inside left and right folders
+    for folder in ['left', 'right']:
+        for subfolder in ['train', 'val']:
+            for c in CLASSES:
+                class_folder = os.path.join(DATASET_FOLDER, folder, subfolder, c)
+                if not os.path.exists(class_folder):
+                    os.makedirs(class_folder)
+
+    for index, row in data.iterrows():
+        class_folder = os.path.join(DATASET_FOLDER, row["side"], "val" if row["subject_id"] in val_subjects else "train", "under_18" if row["under_18"] else "over_18")
+        shutil.copy(row["image"], class_folder)
+
+
+
+                                                 
 
     return TRAIN_FOLDER, VAL_FOLDER
 

@@ -8,6 +8,7 @@ import numpy as np
 import torchvision
 from torchvision import datasets, models
 from torchvision.transforms import v2
+import cv2
 
 import matplotlib.pyplot as plt
 import time
@@ -25,39 +26,102 @@ import seaborn
 import pandas as pd
 
 
-def load_dataset(train_folder, val_folder, data_augmentation):
-    # logging.info(f"Loading dataset from {train_folder} and {val_folder}")
+def load_dataset(data_folder, data_augmentation):
+
+    ## Gray scale images
     data_transforms = {
-    'train': v2.Compose([
+        'train': v2.Compose([
             v2.RandomRotation(30) if data_augmentation else v2.RandomRotation(0),
             v2.RandomHorizontalFlip() if data_augmentation else v2.RandomHorizontalFlip(0),
-
-        v2.Resize(224),
-        v2.ToImage(),
-        v2.ToDtype(torch.float32, scale=True),
-        v2.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-
-    ]),
-    'val': v2.Compose([
-        v2.Resize(224),
-        v2.ToImage(),
-        v2.ToDtype(torch.float32, scale=True),
-        v2.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-    ])
+            v2.Resize(224),
+            v2.Grayscale(num_output_channels=1),
+            v2.ToImage(),
+            v2.ToDtype(torch.float32, scale=True),
+            v2.Normalize(mean=[0.485], std=[0.229])
+        ]),
+        'val': v2.Compose([
+            v2.Resize(224),
+            v2.Grayscale(num_output_channels=1),
+            v2.ToImage(),
+            v2.ToDtype(torch.float32, scale=True),
+            v2.Normalize(mean=[0.485], std=[0.229])
+        ]),
     }
 
-    image_datasets = {x: datasets.ImageFolder(os.path.join(train_folder if x == "train" else val_folder), data_transforms[x]) for x in ['train', 'val']}
-    dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=4, shuffle=True, num_workers=4) for x in ['train', 'val']}
+    ## RGB images
+    # data_transforms = {
+    #     'train': v2.Compose([
+    #         v2.RandomRotation(30) if data_augmentation else v2.RandomRotation(0),
+    #         v2.RandomHorizontalFlip() if data_augmentation else v2.RandomHorizontalFlip(0),
+    #         v2.Resize(224),
+    #         v2.ToImage(),
+    #         v2.ToDtype(torch.float32, scale=True),
+    #         v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    #     ]),
+    #     'val': v2.Compose([
+    #         v2.Resize(224),
+    #         v2.ToImage(),
+    #         v2.ToDtype(torch.float32, scale=True),
+    #         v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    #     ]),
+    # }
 
-    dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
-    class_names = image_datasets['train'].classes
+    # there are subfolders for every subject under train/val and under_18/over_18
+    # concat images for every subject in one tensor
+
+    images_dataset = {}
+
+    left_images = {'train': [], 'val': []}
+    right_images = {'train': [], 'val': []}
+
+    for subfolder in ['train', 'val']:
+        for side in ['left', 'right']:
+            for age in ['under_18', 'over_18']:
+                folder = os.path.join(data_folder, side, subfolder, age)
+                for image in os.listdir(folder):
+                    image_path = os.path.join(folder, image)
+                    if side == 'left':
+                        left_images[subfolder].append(cv2.imread(image_path, cv2.IMREAD_GRAYSCALE))
+                    else:
+                        right_images[subfolder].append(cv2.imread(image_path, cv2.IMREAD_GRAYSCALE))
+
+    # apply data_transforms to the images
+    for subfolder in ['train', 'val']:
+        left_images[subfolder] = data_transforms[subfolder](torch.tensor(left_images[subfolder]))
+        right_images[subfolder] = data_transforms[subfolder](torch.tensor(right_images[subfolder]))
+
+        
+
+
+    stacked_images = {'train': [], 'val': []}
+    for left_image, right_image in zip(left_images, right_images):
+        left_image = cv2.imread(left_image, cv2.IMREAD_GRAYSCALE)
+        right_image = cv2.imread(right_image, cv2.IMREAD_GRAYSCALE)
+        stacked_image = np.stack([left_image, right_image], axis=-1)
+        stacked_images[subfolder].append(stacked_image)
+
+    
+                                                     
+
+                                                           
+
+   
+    dataloaders = {x: torch.utils.data.DataLoader(images_dataset[x], batch_size=4,
+                                                shuffle=True, num_workers=4)
+                    for x in ['train', 'val']}
+    dataset_sizes = {x: len(images_dataset[x]) for x in ['train', 'val']}
+    
+
+    class_names = images_dataset['train'].classes
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    # logging.info(image_datasets)
-    # # show shape of the first image
-    # logging.info(next(iter(dataloaders['train']))[0])
-
+    logging.info(images_dataset)
+    # show first image shape
+    inputs, classes = next(iter(dataloaders['train']))
+    logging.info(f"First image shape: {inputs[0].shape}")
+    
+    logging.info(inputs[0])
 
     return dataloaders, dataset_sizes, class_names, device
 
@@ -71,7 +135,7 @@ def train(model, criterion, optimizer, scheduler, num_epochs, dataloaders, datas
     best_acc = 0.0
 
     for epoch in range(num_epochs):
-        logging.info('Epoch {}/{}'.format(epoch, num_epochs - 1))
+        logging.info('Epoch {}/{}'.format(epoch+1, num_epochs))
         logging.info('-' * 10)
 
         # Each epoch has a training and validation phase
@@ -154,15 +218,16 @@ def update_results_csv(architecture, from_pretrained, weight, fixed_feature_extr
 
 
 
-def train_model(dataloaders, dataset_sizes, class_names, device,
+def train_model(data_folder,
                  architecture='resnet18', weights='all',
                  from_pretrained=False, epochs=25, learning_rate=0.001, data_augmentation=False, fixed_feature_extractor=False):
+    
     # load the dataset
-    if data_augmentation:
-        logging.info("Data augmentation enabled")
-    else:
-        logging.info("Data augmentation disabled")
 
+
+    dataloaders, dataset_sizes, class_names, device = load_dataset(data_folder, data_augmentation)
+        
+    
 
     # load the model    
     if weights == "all":
@@ -179,8 +244,7 @@ def train_model(dataloaders, dataset_sizes, class_names, device,
         logging.info(f"Loading {weight} weights")
         model = models.__dict__[architecture](weights=weight) if from_pretrained else models.__dict__[architecture]()
         
-        logging.info(f"Model: {model}")
-        logging.info(model.conv1.weight.shape)
+        # logging.info(f"Model: {model}")
         if from_pretrained:
             logging.info(f"Model {architecture} loaded with {weight} weights")
         else:
@@ -190,7 +254,31 @@ def train_model(dataloaders, dataset_sizes, class_names, device,
         if from_pretrained and fixed_feature_extractor:
             for param in model.parameters():
                 param.requires_grad = False
+
+
         
+
+        try:
+            conv_weight = model.conv1.weight
+            model.conv1.in_channels = 1
+
+            model.conv1.weight = torch.nn.Parameter(conv_weight.sum(dim=1, keepdim=True))
+        except:
+            try:
+                conv_weight = model.features[0].weight
+                model.features[0].in_channels = 1
+                model.features[0].weight = torch.nn.Parameter(conv_weight.sum(dim=1, keepdim=True))
+            except: # regnet
+                try:
+                    conv_weight = model.stem[0].weight
+                    model.stem[0].in_channels = 1
+                    model.stem[0].weight = torch.nn.Parameter(conv_weight.sum(dim=1, keepdim=True))
+                except: # mobilenet
+                    conv_weight = model.features[0][0].weight
+                    model.features[0][0].in_channels = 1
+                    model.features[0][0].weight = torch.nn.Parameter(conv_weight.sum(dim=1, keepdim=True))
+
+        # logging.info(model(torch.rand(1, 1, 224, 224)).shape)
 
 
         try:
@@ -198,11 +286,35 @@ def train_model(dataloaders, dataset_sizes, class_names, device,
             model.fc = nn.Linear(num_ftrs, len(class_names))
 
         except AttributeError: # some models have classifier instead of fc
-            num_ftrs = model.classifier[-1].in_features
-            model.classifier[-1] = nn.Linear(num_ftrs, len(class_names))
+            # check if classifier is a list or a single layer
+            try:
+                if isinstance(model.classifier, torch.nn.Sequential):
+                    num_ftrs = model.classifier[-1].in_features
+                    model.classifier[-1] = torch.nn.Linear(num_ftrs, len(class_names))
+                else:
+                    num_ftrs = model.classifier.in_features
+                    model.classifier = torch.nn.Linear(num_ftrs, len(class_names))
+            except:
+                # check if head is a list or a single layer
+                try:
+                    num_ftrs = model.head.in_features
+                    model.head = torch.nn.Linear(num_ftrs, len(class_names))
+                except:
+                    try:
+                        num_ftrs = model.heads[-1].in_features
+                        model.heads[-1] = torch.nn.Linear(num_ftrs, len(class_names))
+                    except: # special case squeezenet
+                        num_ftrs = model.classifier[1].in_channels
+                        model.classifier[1] = torch.nn.Conv2d(num_ftrs, len(class_names), kernel_size=(1, 1))
+
+
         
 
-   
+
+
+
+
+    
 
 
         model = model.to(device)

@@ -12,16 +12,16 @@
             "console": "integratedTerminal"
         },
         {
-            "name": "Python: single images",
+            "name": "Python: dual images",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/pipeline.py",
             // "args": ["--architecture", "resnet18", "--from-pretrained"],
-            "args": ["--architecture", "resnet18", "--from-pretrained", "--weights", "all"], //, "--input-data-folder", "UP_DOWN_stadiazione_CH_gimp"],
+            "args": ["--architecture", "resnet18", "--from-pretrained", "--weights", "IMAGENET1K_V1"], //, "--input-data-folder", "UP_DOWN_stadiazione_CH_gimp"],
             "console": "integratedTerminal"
         },
         {
-            "name": "Python: single images k fold",
+            "name": "Python: dual images k fold",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/pipeline.py",
