@@ -22,6 +22,10 @@ def main():
     parser.add_argument("--from-pretrained", action="store_true", required=False)
     parser.add_argument("--data-augmentation", action="store_true", required=False)
     parser.add_argument("--fixed-feature-extractor", action="store_true", required=False)
+    parser.add_argument("--learning-rate", type=float, required=False)
+    parser.add_argument("--batch-size", type=int, required=False)
+    parser.add_argument("--epochs", type=int, required=False)
+
     parser.add_argument("--k-fold", type=int, required=False)
     parser.add_argument("--weights", type=str, required=False)
 
@@ -73,7 +77,7 @@ def main():
 
             model_path = train_model(dataloaders, dataset_sizes, class_names, device,
                                      architecture=args.architecture, weights=args.weights,
-                                     from_pretrained=args.from_pretrained, epochs=100, data_augmentation=args.data_augmentation, fixed_feature_extractor=args.fixed_feature_extractor)
+                                     from_pretrained=args.from_pretrained, epochs=args.epochs, data_augmentation=args.data_augmentation, fixed_feature_extractor=args.fixed_feature_extractor)
             logging.info(f"Model path: {model_path}")
 
             accuracy, predictions, labels = evaluate_model(model_path, dataloaders, device)
@@ -119,7 +123,9 @@ def main():
         try:
             model_path = train_model(DATASET_FOLDER,
                                  architecture=args.architecture, weights=args.weights,
-                                 from_pretrained=args.from_pretrained, epochs=100, data_augmentation=args.data_augmentation, fixed_feature_extractor=args.fixed_feature_extractor)
+                                 from_pretrained=args.from_pretrained, epochs=args.epochs,
+                                 learning_rate=args.learning_rate, batch_size=args.batch_size,
+                                 data_augmentation=args.data_augmentation, fixed_feature_extractor=args.fixed_feature_extractor)
         except Exception as e:
             logging.error(f"{e}")
             return

@@ -5,6 +5,8 @@ import glob
 import logging
 import shutil
 import numpy as np
+import cv2
+from PIL import Image
 
 OUTPUTS_FOLDER = "outputs_2d"
 DATASET_FOLDER = OUTPUTS_FOLDER + "/data"
@@ -29,6 +31,16 @@ def prepare_folders():
     
     # clear data folder
     os.system(f"rm -rf {DATASET_FOLDER}/*")
+
+    # create train and val folders
+    for folder in [TRAIN_FOLDER, VAL_FOLDER]:
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+                
+            for c in CLASSES:
+                class_folder = os.path.join(folder, c)
+                if not os.path.exists(class_folder):
+                    os.makedirs(class_folder)
             
 
 
@@ -80,32 +92,35 @@ def load_data_into_folders(data_file):
     # each folder should have a subfolder for each class (under 18 and over 18)
 
     unique_subjects = data["subject_id"].unique()
+    np.random.seed(SEED)
 
     # shuffle the subjects
-    np.random.seed(SEED)
     np.random.shuffle(unique_subjects)
 
-    # split the subjects into train and val
-    train_subjects = unique_subjects[:int(0.8 * len(unique_subjects))]
-    val_subjects = unique_subjects[int(0.8 * len(unique_subjects)):]
+    # 80% of the subjects will be used for training
+    subjects = {'train': unique_subjects[:int(0.8 * len(unique_subjects))], 'val': unique_subjects[int(0.8 * len(unique_subjects)):]}
 
-    # copy the images to the train and val subfolders inside left and right folders
-    for folder in ['left', 'right']:
-        for subfolder in ['train', 'val']:
-            for c in CLASSES:
-                class_folder = os.path.join(DATASET_FOLDER, folder, subfolder, c)
-                if not os.path.exists(class_folder):
-                    os.makedirs(class_folder)
+    for subject_type, subject_list in subjects.items():
+        for subject in subject_list:
+            subject_data = data[data["subject_id"] == subject]
+            # stack the left and right images (grayscale) from 2x 2D images to 1x 3D image
+            images = [cv2.imread(image, cv2.IMREAD_GRAYSCALE) for image in subject_data["image"]]
 
-    for index, row in data.iterrows():
-        class_folder = os.path.join(DATASET_FOLDER, row["side"], "val" if row["subject_id"] in val_subjects else "train", "under_18" if row["under_18"] else "over_18")
-        shutil.copy(row["image"], class_folder)
+            class_folder = os.path.join(DATASET_FOLDER, subject_type, "under_18" if subject_data.iloc[0]["under_18"] else "over_18")
+            
+            stacked_image = np.stack(images, axis=-1)
+            # add dimension of zeros to the stacked image
+            stacked_image = np.concatenate([stacked_image, np.zeros_like(images[0])[..., np.newaxis]], axis=-1)
+            # save the stacked image as lossless rgb bmp
+            im = Image.fromarray(stacked_image)
+            im.save(os.path.join(class_folder, f"{subject}.bmp"))
 
 
 
-                                                 
+
 
     return TRAIN_FOLDER, VAL_FOLDER
+
 
 
 def load_data_into_k_fold_folders(data_file, k=5):

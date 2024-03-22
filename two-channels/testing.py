@@ -20,19 +20,17 @@ data_transforms = {
         v2.RandomRotation(30) if data_augmentation else v2.RandomRotation(0),
         v2.RandomHorizontalFlip() if data_augmentation else v2.RandomHorizontalFlip(0),
         v2.Resize(224),
-        v2.Grayscale(num_output_channels=1),
         v2.ToImage(),
-        v2.ToDtype(torch.float32, scale=True),
-        v2.Normalize(mean=[0.485], std=[0.229])
-    ]),
-    'val': v2.Compose([
-        v2.Resize(224),
-        v2.Grayscale(num_output_channels=1),
-        v2.ToImage(),
-        v2.ToDtype(torch.float32, scale=True),
-        v2.Normalize(mean=[0.485], std=[0.229])
-    ]),
-}
+            v2.ToDtype(torch.float32, scale=True),
+            v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ]),
+        'val': v2.Compose([
+            v2.Resize(224),
+            v2.ToImage(),
+            v2.ToDtype(torch.float32, scale=True),
+            v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ]),
+    }
 
 
 # %%

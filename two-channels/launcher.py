@@ -24,5 +24,6 @@ import os
 pretrained_models = ['resnet50', 'mobilenet_v2', 'wide_resnet50_2', 'regnet_x_16gf', 'resnext50_32x4d']
 
 for architecture in pretrained_models:
-# for architecture in ["alexnet", "resnet18"]:
-    os.system(f"python pipeline.py --architecture {architecture} --from-pretrained --weights IMAGENET1K_V1 --data-augmentation")
+    for learning_rate in [0.0001, 0.001, 0.01]:
+        for batch_size in [32, 64, 128]:
+            os.system(f"python pipeline.py --architecture {architecture} --from-pretrained --weights IMAGENET1K_V1 --data-augmentation --learning-rate {learning_rate} --epochs 50 --batch-size {batch_size}")
