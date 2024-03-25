@@ -161,13 +161,6 @@ cython_debug/
 
 
 UP_DOWN_stadiazione_CH_gimp/
-outputs_single_images/
-outputs_single_images_k_fold/
-outputs_single_images_weights/
-outputs_single_images_weights_default_transforms/
-outputs_1d_images/
-outputs_3d_images/
-random_selection/
-random_selection_k_fold/
+outputs*/
 
 pipeline.log

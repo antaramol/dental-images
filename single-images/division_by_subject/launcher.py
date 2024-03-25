@@ -29,8 +29,8 @@ import os
 # for architecture in ['resnet34']:
 #     for learning_rate in [0.0001]:
 #         for batch_size in [32]:
-#             os.system(f"python pipeline.py --architecture {architecture} --from-pretrained --weights IMAGENET1K_V1 --data-augmentation --learning-rate {learning_rate} --epochs 100 --batch-size {batch_size}") # --input-data-folder UP_DOWN_stadiazione_CH_gimp")
+#             os.system(f"python pipeline.py --architecture {architecture} --from-pretrained --weights IMAGENET1K_V1 --data-augmentation --learning-rate {learning_rate} --epochs 60 --batch-size {batch_size} --input-data-folder UP_DOWN_stadiazione_CH_gimp")
 
 
 #### random selection k-fold
-os.system(f"python pipeline.py --architecture resnet34 --from-pretrained --weights IMAGENET1K_V1 --data-augmentation --learning-rate 0.0001 --epochs 100 --batch-size 32 --k-fold 5 --input-data-folder UP_DOWN_stadiazione_CH_gimp")
+os.system(f"python pipeline.py --architecture resnet34 --from-pretrained --weights IMAGENET1K_V1 --data-augmentation --learning-rate 0.0001 --epochs 60 --batch-size 32 --input-data-folder UP_DOWN_stadiazione_CH_gimp --k-fold 5")

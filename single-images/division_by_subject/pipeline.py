@@ -80,6 +80,10 @@ def main():
                                      architecture=args.architecture, weights=args.weights,
                                      from_pretrained=args.from_pretrained, epochs=args.epochs, learning_rate=args.learning_rate,
                                      fixed_feature_extractor=args.fixed_feature_extractor)
+            
+
+            accuracy, predictions, labels = evaluate_model(model_path, dataloaders, device)
+
 
 
             # update the results csv
@@ -89,10 +93,9 @@ def main():
 
             update_results_csv(args.architecture, args.from_pretrained, args.weights,
                                  args.fixed_feature_extractor, args.data_augmentation, args.epochs, args.learning_rate,
-                                 args.batch_size, max(history['val']['acc']), model_path)
+                                 args.batch_size, max(history['val']['acc']), accuracy, model_path)
 
 
-            accuracy, predictions, labels = evaluate_model(model_path, dataloaders, device)
 
             mean_accuracy += accuracy
             model_predictions.append(predictions)
@@ -137,9 +140,16 @@ def main():
                                  from_pretrained=args.from_pretrained, epochs=args.epochs, learning_rate=args.learning_rate,
                                  fixed_feature_extractor=args.fixed_feature_extractor)
             
+            # evaluate the model on the val folder
+            accuracy, predictions, labels = evaluate_model(model_path, dataloaders, device)
+
+            logging.info(f"Accuracy: {accuracy}")
+
+            # update the results csv
             update_results_csv(args.architecture, args.from_pretrained, args.weights,
                                  args.fixed_feature_extractor, args.data_augmentation, args.epochs, args.learning_rate,
-                                 args.batch_size, max(history['val']['acc']), model_path)
+                                 args.batch_size, max(history['val']['acc']), accuracy, model_path)
+            
         except Exception as e:
             logging.error(f"{e}")
             return
