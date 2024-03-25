@@ -22,6 +22,10 @@ def main():
     parser.add_argument("--from-pretrained", action="store_true", required=False)
     parser.add_argument("--data-augmentation", action="store_true", required=False)
     parser.add_argument("--fixed-feature-extractor", action="store_true", required=False)
+    parser.add_argument("--epochs", type=int, required=False)
+    parser.add_argument("--batch-size", type=int, required=False)
+    parser.add_argument("--learning-rate", type=float, required=False)
+
     parser.add_argument("--k-fold", type=int, required=False)
     parser.add_argument("--weights", type=str, required=False)
 
@@ -68,13 +72,25 @@ def main():
             train_folder = os.path.join(k_fold_folder, "train")
             val_folder = os.path.join(k_fold_folder, "val")
 
-            dataloaders, dataset_sizes, class_names, device = load_dataset(train_folder, val_folder, args.data_augmentation)
+            dataloaders, dataset_sizes, class_names, device = load_dataset(k_fold_folder,
+                                                                           args.data_augmentation, args.batch_size)
 
 
-            model_path = train_model(dataloaders, dataset_sizes, class_names, device,
+            model_path, history = train_model(dataloaders, dataset_sizes, class_names, device,
                                      architecture=args.architecture, weights=args.weights,
-                                     from_pretrained=args.from_pretrained, epochs=100, data_augmentation=args.data_augmentation, fixed_feature_extractor=args.fixed_feature_extractor)
-            logging.info(f"Model path: {model_path}")
+                                     from_pretrained=args.from_pretrained, epochs=args.epochs, learning_rate=args.learning_rate,
+                                     fixed_feature_extractor=args.fixed_feature_extractor)
+
+
+            # update the results csv
+            # update_results_csv(architecture, from_pretrained, str(weight).split(".")[-1],
+            #                    fixed_feature_extractor, data_augmentation, epochs, learning_rate, batch_size,
+            #                    max(history['val']['acc']), model_path)
+
+            update_results_csv(args.architecture, args.from_pretrained, args.weights,
+                                 args.fixed_feature_extractor, args.data_augmentation, args.epochs, args.learning_rate,
+                                 args.batch_size, max(history['val']['acc']), model_path)
+
 
             accuracy, predictions, labels = evaluate_model(model_path, dataloaders, device)
 
@@ -113,17 +129,23 @@ def main():
 
     else:
 
-        # dataloaders, dataset_sizes, class_names, device = load_dataset(train_folder, val_folder, args.data_augmentation)
-
+        dataloaders, dataset_sizes, class_names, device = load_dataset(DATASET_FOLDER, args.data_augmentation, args.batch_size)
         # train the model on the train folder
         try:
-            model_path = train_model(DATASET_FOLDER,
+            model_path, history = train_model(dataloaders, dataset_sizes, class_names, device,
                                  architecture=args.architecture, weights=args.weights,
-                                 from_pretrained=args.from_pretrained, epochs=100, data_augmentation=args.data_augmentation, fixed_feature_extractor=args.fixed_feature_extractor)
+                                 from_pretrained=args.from_pretrained, epochs=args.epochs, learning_rate=args.learning_rate,
+                                 fixed_feature_extractor=args.fixed_feature_extractor)
+            
+            update_results_csv(args.architecture, args.from_pretrained, args.weights,
+                                 args.fixed_feature_extractor, args.data_augmentation, args.epochs, args.learning_rate,
+                                 args.batch_size, max(history['val']['acc']), model_path)
         except Exception as e:
             logging.error(f"{e}")
             return
         logging.info(f"Model path: {model_path}")
+
+        
 
 
     # log the time it took to run the pipeline in minutes

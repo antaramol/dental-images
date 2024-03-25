@@ -25,7 +25,7 @@ import seaborn
 import pandas as pd
 
 
-def load_dataset(data_folder, data_augmentation):
+def load_dataset(data_folder, data_augmentation, batch_size):
 
     ## Gray scale images
     data_transforms = {
@@ -47,30 +47,11 @@ def load_dataset(data_folder, data_augmentation):
         ]),
     }
 
-    ## RGB images
-    # data_transforms = {
-    #     'train': v2.Compose([
-    #         v2.RandomRotation(30) if data_augmentation else v2.RandomRotation(0),
-    #         v2.RandomHorizontalFlip() if data_augmentation else v2.RandomHorizontalFlip(0),
-    #         v2.Resize(224),
-    #         v2.ToImage(),
-    #         v2.ToDtype(torch.float32, scale=True),
-    #         v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    #     ]),
-    #     'val': v2.Compose([
-    #         v2.Resize(224),
-    #         v2.ToImage(),
-    #         v2.ToDtype(torch.float32, scale=True),
-    #         v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    #     ]),
-    # }
-
-
     image_datasets = {x: datasets.ImageFolder(os.path.join(data_folder, x),
                                                 data_transforms[x])
                         for x in ['train', 'val']}
     
-    dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=4,
+    dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=batch_size,
                                                 shuffle=True, num_workers=4)
                     for x in ['train', 'val']}
     dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
@@ -167,11 +148,13 @@ def train(model, criterion, optimizer, scheduler, num_epochs, dataloaders, datas
     return model, history
 
 
-def update_results_csv(architecture, from_pretrained, weight, fixed_feature_extractor, data_augmentation, epochs, best_acc, model_path):
+def update_results_csv(architecture, from_pretrained, weight, fixed_feature_extractor, data_augmentation, epochs, learning_rate, batch_size,
+                       best_acc, model_path):
 
     results = pd.DataFrame({"architecture": [architecture], "from_pretrained": [from_pretrained], "weight": [weight],
                             "fixed_feature_extractor": [fixed_feature_extractor],
-                            "data_augmentation": [data_augmentation], "epochs": [epochs], "best_acc": [best_acc], "model_path": [model_path]})
+                            "data_augmentation": [data_augmentation], "epochs": [epochs], "learning_rate": [learning_rate], "batch_size": [batch_size],
+                            "best_acc": [best_acc], "model_path": [model_path]})
 
     # read the csv file if it exists, else create a new one
     if os.path.exists(os.path.join(OUTPUTS_FOLDER, "results.csv")):
@@ -182,14 +165,15 @@ def update_results_csv(architecture, from_pretrained, weight, fixed_feature_extr
 
 
 
-def train_model(data_folder,
-                 architecture='resnet18', weights='all',
-                 from_pretrained=False, epochs=25, learning_rate=0.001, data_augmentation=False, fixed_feature_extractor=False):
+def train_model(dataloaders, dataset_sizes, class_names, device,
+                 architecture='resnet18', weights='IMAGENET1K_V1',
+                 from_pretrained=False, epochs=25, learning_rate=0.001, 
+                 fixed_feature_extractor=False):
     
     # load the dataset
 
 
-    dataloaders, dataset_sizes, class_names, device = load_dataset(data_folder, data_augmentation)
+    # dataloaders, dataset_sizes, class_names, device = load_dataset(data_folder, data_augmentation, batch_size)
         
     
 
@@ -226,23 +210,11 @@ def train_model(data_folder,
             conv_weight = model.conv1.weight
             model.conv1.in_channels = 1
 
-            model.conv1.weight = torch.nn.Parameter(conv_weight.sum(dim=1, keepdim=True))
+            model.conv1.weight = torch.nn.Parameter(conv_weight[:, :1, :, :])
         except:
-            try:
-                conv_weight = model.features[0].weight
-                model.features[0].in_channels = 1
-                model.features[0].weight = torch.nn.Parameter(conv_weight.sum(dim=1, keepdim=True))
-            except: # regnet
-                try:
-                    conv_weight = model.stem[0].weight
-                    model.stem[0].in_channels = 1
-                    model.stem[0].weight = torch.nn.Parameter(conv_weight.sum(dim=1, keepdim=True))
-                except: # mobilenet
-                    conv_weight = model.features[0][0].weight
-                    model.features[0][0].in_channels = 1
-                    model.features[0][0].weight = torch.nn.Parameter(conv_weight.sum(dim=1, keepdim=True))
+            pass
 
-        # logging.info(model(torch.rand(1, 1, 224, 224)).shape)
+        logging.info(model(torch.randn(1, 1, 224, 224)).shape)
 
 
         try:
@@ -285,11 +257,17 @@ def train_model(data_folder,
 
         criterion = nn.CrossEntropyLoss()
 
-        # Observe that all parameters are being optimized
-        optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
+        logging.info("Batch size: " + str(dataloaders['train'].batch_size))
+        logging.info("Learning rate: " + str(learning_rate))
 
-        # Decay LR by a factor of 0.1 every 7 epochs
-        exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
+        # Observe that all parameters are being optimized
+        # optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
+
+        optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+
+        # Decay LR by a factor of 0.1 every N epochs
+        n = 70000
+        exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=n, gamma=0.1)
 
         # train the model
         model, history = train(model, criterion, optimizer, exp_lr_scheduler, num_epochs=epochs, dataloaders=dataloaders, dataset_sizes=dataset_sizes, device=device)
@@ -340,14 +318,11 @@ def train_model(data_folder,
         plt.savefig(os.path.join(os.path.dirname(model_path), "confusion_matrix.png"))
 
 
-        # update the results csv
-        update_results_csv(architecture, from_pretrained, str(weight).split(".")[-1],
-                           fixed_feature_extractor, data_augmentation, epochs, max(history['val']['acc']), model_path)
         
 
         logging.info(f"Model saved into {model_path}")   
 
-    return model_path
+    return model_path, history
 
 
 

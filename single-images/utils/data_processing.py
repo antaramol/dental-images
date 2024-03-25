@@ -6,7 +6,7 @@ import logging
 import shutil
 import numpy as np
 
-OUTPUTS_FOLDER = "outputs_1d_images"
+OUTPUTS_FOLDER = "random_selection_k_fold"
 DATASET_FOLDER = OUTPUTS_FOLDER + "/data"
 MODELS_FOLDER = OUTPUTS_FOLDER + "/models"
 
