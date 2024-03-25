@@ -8,7 +8,7 @@ import numpy as np
 import cv2
 from PIL import Image
 
-OUTPUTS_FOLDER = "outputs_2d"
+OUTPUTS_FOLDER = "test_torch_seed"
 DATASET_FOLDER = OUTPUTS_FOLDER + "/data"
 MODELS_FOLDER = OUTPUTS_FOLDER + "/models"
 

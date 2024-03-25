@@ -118,6 +118,7 @@ def train(model, criterion, optimizer, scheduler, num_epochs, dataloaders, datas
             running_corrects = 0
 
             # Iterate over data.
+            torch.manual_seed(42)
             for inputs, labels in dataloaders[phase]:
                 inputs = inputs.to(device)
                 labels = labels.to(device)
@@ -246,14 +247,19 @@ def train_model(data_folder,
 
         try:
             num_ftrs = model.fc.in_features
+            # use seed when loading new fc layer so that the results are reproducible
+            torch.manual_seed(42)
             model.fc = nn.Linear(num_ftrs, len(class_names))
+            # show the weights of the new fc layer
+            logging.info(model.fc.weight)
+
 
         except AttributeError: # some models have classifier instead of fc
             # check if classifier is a list or a single layer
             try:
                 if isinstance(model.classifier, torch.nn.Sequential):
                     num_ftrs = model.classifier[-1].in_features
-                    model.classifier[-1] = torch.nn.Linear(num_ftrs, len(class_names))
+                    model.classifier[-1] = torch.nn.Linear(num_ftrs, len(class_names), bias=True)
                 else:
                     num_ftrs = model.classifier.in_features
                     model.classifier = torch.nn.Linear(num_ftrs, len(class_names))
@@ -269,9 +275,8 @@ def train_model(data_folder,
                     except: # special case squeezenet
                         num_ftrs = model.classifier[1].in_channels
                         model.classifier[1] = torch.nn.Conv2d(num_ftrs, len(class_names), kernel_size=(1, 1))
-    
 
-
+        
         model = model.to(device)
 
         criterion = nn.CrossEntropyLoss()
