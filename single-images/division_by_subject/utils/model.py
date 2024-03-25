@@ -149,12 +149,12 @@ def train(model, criterion, optimizer, scheduler, num_epochs, dataloaders, datas
 
 
 def update_results_csv(architecture, from_pretrained, weight, fixed_feature_extractor, data_augmentation, epochs, learning_rate, batch_size,
-                       best_acc, model_path):
+                       best_acc, final_acc, model_path):
 
     results = pd.DataFrame({"architecture": [architecture], "from_pretrained": [from_pretrained], "weight": [weight],
                             "fixed_feature_extractor": [fixed_feature_extractor],
                             "data_augmentation": [data_augmentation], "epochs": [epochs], "learning_rate": [learning_rate], "batch_size": [batch_size],
-                            "best_acc": [best_acc], "model_path": [model_path]})
+                            "best_acc": [best_acc], "final_acc": [final_acc], "model_path": [model_path]})
 
     # read the csv file if it exists, else create a new one
     if os.path.exists(os.path.join(OUTPUTS_FOLDER, "results.csv")):
@@ -266,7 +266,7 @@ def train_model(dataloaders, dataset_sizes, class_names, device,
         optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
         # Decay LR by a factor of 0.1 every N epochs
-        n = 70000
+        n = 17
         exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=n, gamma=0.1)
 
         # train the model
