@@ -266,7 +266,7 @@ def train_model(dataloaders, dataset_sizes, class_names, device,
         optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
         # Decay LR by a factor of 0.1 every N epochs
-        n = 17
+        n = 7
         exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=n, gamma=0.1)
 
         # train the model
