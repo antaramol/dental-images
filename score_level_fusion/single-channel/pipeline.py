@@ -62,10 +62,6 @@ def main():
 
 
 
-    trained_models = []
-    last_layer_weights = []
-
-
     if args.k_fold is not None:
         
         mean_accuracy = 0
@@ -79,6 +75,8 @@ def main():
             train_folder = os.path.join(k_fold_folder, "train")
             val_folder = os.path.join(k_fold_folder, "val")
 
+            last_layer_weights = []
+
             for i in range(n):
 
                 dataloaders, dataset_sizes, class_names, device = load_dataset(k_fold_folder,
@@ -91,12 +89,17 @@ def main():
                                     fixed_feature_extractor=args.fixed_feature_extractor)            
                 
 
-                accuracy, predictions, labels = evaluate_model(model_path, dataloaders, device)
+                # evaluate the model on the val folder
+                accuracy, predictions, labels, pred_weights = evaluate_model(model_path, dataloaders, device)
 
+                last_layer_weights.append(pred_weights)
+
+                logging.info(f"Accuracy: {accuracy}")
+
+                # update the results csv
                 update_results_csv(args.architecture, args.from_pretrained, args.weights,
                                     args.fixed_feature_extractor, args.data_augmentation, args.epochs, args.learning_rate,
                                     args.batch_size, max(history['val']['acc']), accuracy, model_path)
-                
 
                 final_weights = []
                 # sum last_layer_weights to get the final weights
@@ -161,6 +164,7 @@ def main():
 
     else:
 
+        last_layer_weights = []
 
         for i in range(n):
     
@@ -173,7 +177,6 @@ def main():
                                     from_pretrained=args.from_pretrained, epochs=args.epochs, learning_rate=args.learning_rate,
                                     fixed_feature_extractor=args.fixed_feature_extractor)
                 
-                trained_models.append(model_path)
 
 
                 # evaluate the model on the val folder
