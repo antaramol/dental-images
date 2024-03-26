@@ -73,15 +73,22 @@ def main():
             train_folder = os.path.join(k_fold_folder, "train")
             val_folder = os.path.join(k_fold_folder, "val")
 
-            dataloaders, dataset_sizes, class_names, device = load_dataset(train_folder, val_folder, args.data_augmentation)
+            dataloaders, dataset_sizes, class_names, device = load_dataset(k_fold_folder,
+                                                                           args.data_augmentation, args.batch_size)
 
 
-            model_path = train_model(dataloaders, dataset_sizes, class_names, device,
-                                     architecture=args.architecture, weights=args.weights,
-                                     from_pretrained=args.from_pretrained, epochs=0, data_augmentation=args.data_augmentation, fixed_feature_extractor=args.fixed_feature_extractor)
-            logging.info(f"Model path: {model_path}")
+            model_path, history = train_model(dataloaders, dataset_sizes, class_names, device,
+                                 architecture=args.architecture, weights=args.weights,
+                                 from_pretrained=args.from_pretrained, epochs=args.epochs, learning_rate=args.learning_rate,
+                                 fixed_feature_extractor=args.fixed_feature_extractor)            
+            
 
             accuracy, predictions, labels = evaluate_model(model_path, dataloaders, device)
+
+            update_results_csv(args.architecture, args.from_pretrained, args.weights,
+                                 args.fixed_feature_extractor, args.data_augmentation, args.epochs, args.learning_rate,
+                                 args.batch_size, max(history['val']['acc']), accuracy, model_path)
+
 
             mean_accuracy += accuracy
             model_predictions.append(predictions)
@@ -118,14 +125,24 @@ def main():
 
     else:
 
-        # dataloaders, dataset_sizes, class_names, device = load_dataset(train_folder, val_folder, args.data_augmentation)
-
+        dataloaders, dataset_sizes, class_names, device = load_dataset(DATASET_FOLDER, args.data_augmentation, args.batch_size)
         # train the model on the train folder
         try:
-            model_path = train_model(DATASET_FOLDER,
+            model_path, history = train_model(dataloaders, dataset_sizes, class_names, device,
                                  architecture=args.architecture, weights=args.weights,
-                                 from_pretrained=args.from_pretrained, epochs=args.epochs, learning_rate=args.learning_rate, batch_size=args.batch_size,
-                                 data_augmentation=args.data_augmentation, fixed_feature_extractor=args.fixed_feature_extractor)
+                                 from_pretrained=args.from_pretrained, epochs=args.epochs, learning_rate=args.learning_rate,
+                                 fixed_feature_extractor=args.fixed_feature_extractor)
+            
+            # evaluate the model on the val folder
+            accuracy, predictions, labels = evaluate_model(model_path, dataloaders, device)
+
+            logging.info(f"Accuracy: {accuracy}")
+
+            # update the results csv
+            update_results_csv(args.architecture, args.from_pretrained, args.weights,
+                                 args.fixed_feature_extractor, args.data_augmentation, args.epochs, args.learning_rate,
+                                 args.batch_size, max(history['val']['acc']), accuracy, model_path)
+            
         except Exception as e:
             logging.error(f"{e}")
             return
