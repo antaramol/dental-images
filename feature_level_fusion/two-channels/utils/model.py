@@ -55,21 +55,9 @@ def load_dataset(data_folder, data_augmentation, batch_size):
                                                 shuffle=True, num_workers=4)
                     for x in ['train', 'val']}
     
-
-    # check dataloaders shape
-    inputs, labels = next(iter(dataloaders['val']))
-    logging.info(f"Inputs shape: {inputs.shape}")
-    logging.info(f"Labels shape: {labels.shape}")
     
 
     # delete last layer of every input image, from (3, 224, 224) to (2, 224, 224)
-    # inputs_train, classes_train = next(iter(dataloaders['train']))
-    # logging.info(inputs_train[0])
-
-    # inputs_train = inputs_train[:, :2, :, :]
-    # inputs_val, classes_val = next(iter(dataloaders['val']))
-    # inputs_val = inputs_val[:, :2, :, :]
-    # logging.info(inputs_train[0])
 
     inputs_train = []
     classes_train = []
@@ -92,15 +80,11 @@ def load_dataset(data_folder, data_augmentation, batch_size):
     inputs_val = torch.cat(inputs_val, dim=0)
     classes_val = torch.cat(classes_val, dim=0)
 
-            
+
 
     dataloaders['train'] = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(inputs_train, classes_train), batch_size=batch_size, shuffle=True)
     dataloaders['val'] = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(inputs_val, classes_val), batch_size=batch_size, shuffle=True)
 
-    # check dataloaders shape
-    inputs, labels = next(iter(dataloaders['val']))
-    logging.info(f"Inputs shape: {inputs.shape}")
-    logging.info(f"Labels shape: {labels.shape}")
 
     dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
     class_names = image_datasets['train'].classes
@@ -108,10 +92,7 @@ def load_dataset(data_folder, data_augmentation, batch_size):
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-
-
-    # subject_ids = [os.path.basename(str(image_path)).split("soggetto_")[1].split(".")[0]
-    #                for image_path in dataloaders["val"].dataset.imgs]
+    # get the subject ids
     image_names = [sample[0] for sample in image_datasets["val"].samples]
     subject_ids = [image_name.split("/")[-1].split(".")[0]
                    for image_name in image_names]
@@ -255,11 +236,9 @@ def train_model(dataloaders, dataset_sizes, class_names, device,
         # Change the input channels of the first layer of the model to 2
         try:
             conv_weight = model.conv1.weight.data
-            logging.info(conv_weight[0, :, :, :])
             model.conv1.weight = torch.nn.Parameter(conv_weight[:, :2, :, :])
 
             logging.info(model.conv1.weight.shape)
-            logging.info(model.conv1.weight[0, :, :, :])
 
 
         except:
