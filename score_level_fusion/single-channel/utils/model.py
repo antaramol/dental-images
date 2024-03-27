@@ -313,6 +313,9 @@ def train_model(dataloaders, dataset_sizes, class_names, device,
         plt.figure(figsize=(10, 7))
         seaborn.heatmap(df_cm, annot=True)
         plt.savefig(os.path.join(os.path.dirname(model_path), "confusion_matrix.png"))
+
+        # close the figure
+        plt.close()
         
 
         logging.info(f"Model saved into {model_path}")   
