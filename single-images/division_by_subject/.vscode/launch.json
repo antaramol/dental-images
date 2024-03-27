@@ -26,7 +26,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/pipeline.py",
             // "args": ["--architecture", "resnet18", "--from-pretrained"],
-            "args": ["--architecture", "resnet34", "--from-pretrained", "--data-augmentation", "--weights", "IMAGENET1K_V1", "--epochs", "3", "--learning-rate", "0.001", "--batch-size", "32", "--k-fold", "5", "--input-data-folder", "UP_DOWN_stadiazione_CH_gimp"],
+            "args": ["--architecture", "resnet34", "--from-pretrained", "--data-augmentation", "--weights", "IMAGENET1K_V1", "--epochs", "3", "--learning-rate", "0.001", "--batch-size", "32", "--k-fold", "10", "--input-data-folder", "UP_DOWN_stadiazione_CH_gimp"],
             "console": "integratedTerminal"
         }
     ]

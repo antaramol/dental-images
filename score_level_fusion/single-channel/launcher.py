@@ -31,4 +31,13 @@ pretrained_models = ['resnet50', 'mobilenet_v2', 'wide_resnet50_2', 'regnet_x_16
 
 
 #### k_fold
-os.system(f"python pipeline.py --architecture resnet34 --from-pretrained --weights IMAGENET1K_V1 --data-augmentation --learning-rate 0.0001 --epochs 60 --batch-size 32 --input-data-folder UP_DOWN_stadiazione_CH_gimp --score-level-fusion 2 --k-fold 5")
+# os.system(f"python pipeline.py --architecture resnet34 --from-pretrained --weights IMAGENET1K_V1 --data-augmentation --learning-rate 0.0001 --epochs 60 --batch-size 32 --input-data-folder UP_DOWN_stadiazione_CH_gimp --score-level-fusion 2 --k-fold 5")
+for architecture in ['resnet34']:
+    for learning_rate in [0.001, 0.0001]:
+        for batch_size in [32, 64]:
+            outputs_folder = f"outputs_10_fold_{architecture}_{learning_rate}_{batch_size}"
+            # create .env file with the outputs folder as env variable
+            with open(".env", "w") as f:
+                f.write(f"OUTPUTS_FOLDER={outputs_folder}")
+                
+            os.system(f"python pipeline.py --architecture {architecture} --from-pretrained --weights IMAGENET1K_V1 --data-augmentation --learning-rate {learning_rate} --epochs 60 --batch-size {batch_size} --input-data-folder UP_DOWN_stadiazione_CH_gimp --score-level-fusion 2 --k-fold 10")

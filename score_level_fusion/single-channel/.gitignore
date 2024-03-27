@@ -161,7 +161,7 @@ cython_debug/
 
 
 UP_DOWN_stadiazione_CH_gimp/
-outputs/
-outputs_k_fold/
+outputs*/
+
 
 pipeline.log

@@ -8,6 +8,9 @@ import os
 import numpy as np
 import pandas as pd
 
+# import softmax function
+from scipy.special import softmax
+
 from utils import *
 
 def main():
@@ -64,9 +67,11 @@ def main():
 
     if args.k_fold is not None:
         
-        mean_accuracy = 0
+        # mean_accuracy = 0
+        k_fold_accuracies = []
         model_predictions = []
         real_labels = []
+        test_subjects = []
 
         # train the model on the k-fold folders (train and val are subfolders inside each k-fold folder)
         for k_fold_folder in k_fold_folders:
@@ -101,40 +106,66 @@ def main():
                                     args.fixed_feature_extractor, args.data_augmentation, args.epochs, args.learning_rate,
                                     args.batch_size, max(history['val']['acc']), accuracy, model_path)
 
-                final_weights = []
+                
+                avg_weights = []
+                max_weights = []
+                min_weights = []
                 # sum last_layer_weights to get the final weights
                 if i == args.score_level_fusion - 1:
                     for j in range(len(last_layer_weights)):
+                        # apply the softmax function to the weights
+                        last_layer_weights[j] = softmax(last_layer_weights[j], axis=1)
                         # sum the weights
                         if j == 0:
-                            final_weights = last_layer_weights[j]
+                            avg_weights = last_layer_weights[j]
+                            max_weights = last_layer_weights[j]
+                            min_weights = last_layer_weights[j]
                         else:
-                            final_weights = np.add(final_weights, last_layer_weights[j])
+                            avg_weights = np.add(avg_weights, last_layer_weights[j])
+                            max_weights = np.maximum(max_weights, last_layer_weights[j])
+                            min_weights = np.minimum(min_weights, last_layer_weights[j])
 
 
-                    final_predictions = np.argmax(final_weights, axis=1)
+                    avg_predictions = np.argmax(avg_weights, axis=1)
+                    max_predictions = np.argmax(max_weights, axis=1)
+                    min_predictions = np.argmax(min_weights, axis=1)
+                    
 
-                    score_level_fusion_accuracy = np.mean(final_predictions == labels)
+                    avg_score_level_fusion_accuracy = np.mean(avg_predictions == labels)
+                    max_score_level_fusion_accuracy = np.mean(max_predictions == labels)
+                    min_score_level_fusion_accuracy = np.mean(min_predictions == labels)
 
                     # update the results csv
-                    score_level_fusion_results = pd.DataFrame({"architecture": [args.architecture], "from_pretrained": [args.from_pretrained], "data_augmentation": [args.data_augmentation], "fixed_feature_extractor": [args.fixed_feature_extractor], "epochs": [args.epochs], "learning_rate": [args.learning_rate], "batch_size": [args.batch_size], "score_level_fusion": [args.score_level_fusion], "score_level_fusion_accuracy": [score_level_fusion_accuracy]})
+                    score_level_fusion_results = pd.DataFrame({"architecture": [args.architecture], "from_pretrained": [args.from_pretrained], "data_augmentation": [args.data_augmentation], "fixed_feature_extractor": [args.fixed_feature_extractor], "epochs": [args.epochs], "learning_rate": [args.learning_rate], "batch_size": [args.batch_size], "score_level_fusion": [args.score_level_fusion]
+                    , "avg_score_level_fusion_accuracy": [avg_score_level_fusion_accuracy], "max_score_level_fusion_accuracy": [max_score_level_fusion_accuracy], "min_score_level_fusion_accuracy": [min_score_level_fusion_accuracy]})
+
                     if os.path.exists(os.path.join(OUTPUTS_FOLDER, "score_level_fusion_results.csv")):
                         old_score_level_fusion_results = pd.read_csv(os.path.join(OUTPUTS_FOLDER, "score_level_fusion_results.csv"))
                         score_level_fusion_results = pd.concat([old_score_level_fusion_results, score_level_fusion_results], ignore_index=True)
 
                     score_level_fusion_results.to_csv(os.path.join(OUTPUTS_FOLDER, "score_level_fusion_results.csv"), index=False)
 
-                    logging.info(f"Score level fusion accuracy: {score_level_fusion_accuracy}")
 
 
 
             
-            mean_accuracy += accuracy if args.score_level_fusion is None else score_level_fusion_accuracy
+            k_fold_accuracies.append(accuracy)
+
+
             model_predictions.append(predictions)
-
             real_labels.append(labels)
+            
+            # image name is in the string between the first underscore and the last dot
+            
+            subject_ids = [os.path.basename(str(image_path)).split("soggetto_")[1].split(".")[0]
+                           for image_path in dataloaders["val"].dataset.samples]
+            
+            test_subjects.append(subject_ids)
 
-        mean_accuracy /= args.k_fold
+
+        mean_accuracy = np.mean([accuracy for accuracy in k_fold_accuracies])
+
+        std_accuracy = np.std([accuracy for accuracy in k_fold_accuracies])
 
 
         # log FINAL RESULTS to the console
@@ -144,23 +175,38 @@ def main():
 
         logging.info(f"Mean accuracy: {mean_accuracy}")
 
-        # compare the predictions with the real labels
-        model_predictions = np.concatenate(model_predictions)
-        real_labels = np.concatenate(real_labels)
+        logging.info(f"Standard deviation: {std_accuracy}")
 
-        accuracy = np.mean(model_predictions == real_labels)
-        logging.info(f"Final accuracy: {accuracy}")
-            
 
-        # save the mean accuracy to a csv file in the output folder, with the architecture, from_pretrained, data_augmentation, and fixed_feature_extractor as columns
+        # save the mean, std accuracy to a csv file in the output folder, with the architecture, from_pretrained, data_augmentation, and fixed_feature_extractor as columns
         
-        k_fold_results = pd.DataFrame({"architecture": [args.architecture], "from_pretrained": [args.from_pretrained], "data_augmentation": [args.data_augmentation], "fixed_feature_extractor": [args.fixed_feature_extractor], "mean_accuracy": [mean_accuracy], "final_accuracy": [accuracy]})
+        k_fold_results = pd.DataFrame({"architecture": [args.architecture], "from_pretrained": [args.from_pretrained], "data_augmentation": [args.data_augmentation], "fixed_feature_extractor": [args.fixed_feature_extractor], "mean_accuracy": [mean_accuracy], "std_accuracy": [std_accuracy]})
 
         if os.path.exists(os.path.join(OUTPUTS_FOLDER, "k_fold_results.csv")):
             old_k_fold_results = pd.read_csv(os.path.join(OUTPUTS_FOLDER, "k_fold_results.csv"))
             k_fold_results = pd.concat([old_k_fold_results, k_fold_results], ignore_index=True)
 
         k_fold_results.to_csv(os.path.join(OUTPUTS_FOLDER, "k_fold_results.csv"), index=False)
+
+
+
+        # compare the predictions with the real labels
+        model_predictions = np.concatenate(model_predictions)
+        real_labels = np.concatenate(real_labels)
+
+        final_accuracy = np.mean(model_predictions == real_labels)
+        logging.info(f"Final accuracy: {final_accuracy}")
+
+
+        # save the predictions and real labels to a csv file in the output folder, with subjet_id, age, prediction, and real_label as columns
+        predictions_df = pd.DataFrame({"subject_id": np.concatenate(test_subjects), "prediction": model_predictions, "real_label": real_labels})
+
+        # save the predictions to a csv file, if the file already exists, delete it and create a new one
+        predictions_file = os.path.join(OUTPUTS_FOLDER, "predictions.csv")
+        if os.path.exists(predictions_file):
+            os.remove(predictions_file)
+
+        predictions_df.to_csv(predictions_file, index=False)
 
     else:
 
@@ -197,30 +243,44 @@ def main():
             logging.info(f"Model path: {model_path}")
 
 
-            final_weights = []
+            avg_weights = []
+            max_weights = []
+            min_weights = []
             # sum last_layer_weights to get the final weights
             if i == args.score_level_fusion - 1:
                 for j in range(len(last_layer_weights)):
+                    # apply the softmax function to the weights
+                    last_layer_weights[j] = softmax(last_layer_weights[j], axis=1)
                     # sum the weights
                     if j == 0:
-                        final_weights = last_layer_weights[j]
+                        avg_weights = last_layer_weights[j]
+                        max_weights = last_layer_weights[j]
+                        min_weights = last_layer_weights[j]
                     else:
-                        final_weights = np.add(final_weights, last_layer_weights[j])
+                        avg_weights = np.add(avg_weights, last_layer_weights[j])
+                        max_weights = np.maximum(max_weights, last_layer_weights[j])
+                        min_weights = np.minimum(min_weights, last_layer_weights[j])
 
 
-                final_predictions = np.argmax(final_weights, axis=1)
+                avg_predictions = np.argmax(avg_weights, axis=1)
+                max_predictions = np.argmax(max_weights, axis=1)
+                min_predictions = np.argmax(min_weights, axis=1)
+                
 
-                score_level_fusion_accuracy = np.mean(final_predictions == labels)
+                avg_score_level_fusion_accuracy = np.mean(avg_predictions == labels)
+                max_score_level_fusion_accuracy = np.mean(max_predictions == labels)
+                min_score_level_fusion_accuracy = np.mean(min_predictions == labels)
 
                 # update the results csv
-                score_level_fusion_results = pd.DataFrame({"architecture": [args.architecture], "from_pretrained": [args.from_pretrained], "data_augmentation": [args.data_augmentation], "fixed_feature_extractor": [args.fixed_feature_extractor], "epochs": [args.epochs], "learning_rate": [args.learning_rate], "batch_size": [args.batch_size], "score_level_fusion": [args.score_level_fusion], "score_level_fusion_accuracy": [score_level_fusion_accuracy]})
+                score_level_fusion_results = pd.DataFrame({"architecture": [args.architecture], "from_pretrained": [args.from_pretrained], "data_augmentation": [args.data_augmentation], "fixed_feature_extractor": [args.fixed_feature_extractor], "epochs": [args.epochs], "learning_rate": [args.learning_rate], "batch_size": [args.batch_size], "score_level_fusion": [args.score_level_fusion]
+                , "avg_score_level_fusion_accuracy": [avg_score_level_fusion_accuracy], "max_score_level_fusion_accuracy": [max_score_level_fusion_accuracy], "min_score_level_fusion_accuracy": [min_score_level_fusion_accuracy]})
+
                 if os.path.exists(os.path.join(OUTPUTS_FOLDER, "score_level_fusion_results.csv")):
                     old_score_level_fusion_results = pd.read_csv(os.path.join(OUTPUTS_FOLDER, "score_level_fusion_results.csv"))
                     score_level_fusion_results = pd.concat([old_score_level_fusion_results, score_level_fusion_results], ignore_index=True)
 
                 score_level_fusion_results.to_csv(os.path.join(OUTPUTS_FOLDER, "score_level_fusion_results.csv"), index=False)
 
-                logging.info(f"Score level fusion accuracy: {score_level_fusion_accuracy}")
             
 
 

@@ -6,7 +6,7 @@ import logging
 import shutil
 import numpy as np
 
-OUTPUTS_FOLDER = "outputs"
+OUTPUTS_FOLDER = "outputs_10_fold"
 DATASET_FOLDER = OUTPUTS_FOLDER + "/data"
 MODELS_FOLDER = OUTPUTS_FOLDER + "/models"
 
@@ -109,7 +109,9 @@ def load_data_into_k_fold_folders(data_file, k=5):
         data = data.sample(frac=1, random_state=SEED)
     
         # split the data into k folds
-        k_fold_data = np.array_split(data, k)
+        # k_fold_data = np.array_split(data, k)
+        # use iloc to split the data into k folds
+        k_fold_data = [data.iloc[i::k] for i in range(k)]
     
         # save data into k-fold folders, each folder contains a train and val folder with subfolders for each class
         k_fold_folders = []

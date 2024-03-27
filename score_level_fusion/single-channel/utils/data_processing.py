@@ -8,8 +8,14 @@ import numpy as np
 import cv2
 from PIL import Image
 
+# load env variables
+from dotenv import load_dotenv
 
-OUTPUTS_FOLDER = "outputs_k_fold"
+
+load_dotenv()
+
+
+OUTPUTS_FOLDER = os.getenv("OUTPUTS_FOLDER", "outputs")
 DATASET_FOLDER = OUTPUTS_FOLDER + "/data"
 MODELS_FOLDER = OUTPUTS_FOLDER + "/models"
 
@@ -122,7 +128,9 @@ def load_data_into_k_fold_folders(data_file, k=5):
         np.random.shuffle(unique_subjects)
 
         # split the subjects into k folds
-        k_fold_subjects = np.array_split(unique_subjects, k)
+        # k_fold_subjects = np.array_split(unique_subjects, k)
+        k_fold_subjects = [unique_subjects[i::k] for i in range(k)]
+
 
         k_fold_data = []
         for i in range(k):

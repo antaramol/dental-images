@@ -206,15 +206,20 @@ def train_model(dataloaders, dataset_sizes, class_names, device,
 
         
 
+        
         try:
             conv_weight = model.conv1.weight
             model.conv1.in_channels = 1
 
-            model.conv1.weight = torch.nn.Parameter(conv_weight[:, :1, :, :])
+            model.conv1.weight = torch.nn.Parameter(conv_weight.sum(dim=1, keepdim=True))
         except:
-            pass
+            try:
+                conv_weight = model.conv1[0].weight
+                model.conv1[0].in_channels = 1
 
-        logging.info(model(torch.randn(1, 1, 224, 224)).shape)
+                model.conv1[0].weight = torch.nn.Parameter(conv_weight.sum(dim=1, keepdim=True))
+            except:
+                raise Exception("Could not change the input channels of the first layer")
 
 
         try:
