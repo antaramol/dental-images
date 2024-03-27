@@ -56,17 +56,51 @@ def load_dataset(data_folder, data_augmentation, batch_size):
                     for x in ['train', 'val']}
     
 
+    # check dataloaders shape
+    inputs, labels = next(iter(dataloaders['val']))
+    logging.info(f"Inputs shape: {inputs.shape}")
+    logging.info(f"Labels shape: {labels.shape}")
+    
+
     # delete last layer of every input image, from (3, 224, 224) to (2, 224, 224)
-    inputs_train, classes_train = next(iter(dataloaders['train']))
-    logging.info(inputs_train[0])
+    # inputs_train, classes_train = next(iter(dataloaders['train']))
+    # logging.info(inputs_train[0])
 
-    inputs_train = inputs_train[:, :2, :, :]
-    inputs_val, classes_val = next(iter(dataloaders['val']))
-    inputs_val = inputs_val[:, :2, :, :]
-    logging.info(inputs_train[0])
+    # inputs_train = inputs_train[:, :2, :, :]
+    # inputs_val, classes_val = next(iter(dataloaders['val']))
+    # inputs_val = inputs_val[:, :2, :, :]
+    # logging.info(inputs_train[0])
 
-    dataloaders['train'] = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(inputs_train, classes_train), batch_size=4, shuffle=True, num_workers=4)
-    dataloaders['val'] = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(inputs_val, classes_val), batch_size=4, shuffle=True, num_workers=4)
+    inputs_train = []
+    classes_train = []
+
+    inputs_val = []
+    classes_val = []
+
+
+    for inputs, labels in dataloaders['train']:
+        inputs_train.append(inputs[:, :2, :, :])
+        classes_train.append(labels)
+
+    for inputs, labels in dataloaders['val']:
+        inputs_val.append(inputs[:, :2, :, :])
+        classes_val.append(labels)
+
+    inputs_train = torch.cat(inputs_train, dim=0)
+    classes_train = torch.cat(classes_train, dim=0)
+
+    inputs_val = torch.cat(inputs_val, dim=0)
+    classes_val = torch.cat(classes_val, dim=0)
+
+            
+
+    dataloaders['train'] = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(inputs_train, classes_train), batch_size=batch_size, shuffle=True)
+    dataloaders['val'] = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(inputs_val, classes_val), batch_size=batch_size, shuffle=True)
+
+    # check dataloaders shape
+    inputs, labels = next(iter(dataloaders['val']))
+    logging.info(f"Inputs shape: {inputs.shape}")
+    logging.info(f"Labels shape: {labels.shape}")
 
     dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
     class_names = image_datasets['train'].classes
@@ -74,7 +108,15 @@ def load_dataset(data_folder, data_augmentation, batch_size):
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    return dataloaders, dataset_sizes, class_names, device
+
+
+    # subject_ids = [os.path.basename(str(image_path)).split("soggetto_")[1].split(".")[0]
+    #                for image_path in dataloaders["val"].dataset.imgs]
+    image_names = [sample[0] for sample in image_datasets["val"].samples]
+    subject_ids = [image_name.split("/")[-1].split(".")[0]
+                   for image_name in image_names]
+
+    return dataloaders, dataset_sizes, class_names, device, subject_ids
 
 
 def train(model, criterion, optimizer, scheduler, num_epochs, dataloaders, dataset_sizes, device):
@@ -323,6 +365,9 @@ def train_model(dataloaders, dataset_sizes, class_names, device,
         seaborn.heatmap(df_cm, annot=True)
         plt.savefig(os.path.join(os.path.dirname(model_path), "confusion_matrix.png"))
 
+        # close the figure
+        plt.close()
+        
 
         logging.info(f"Model saved into {model_path}")   
 

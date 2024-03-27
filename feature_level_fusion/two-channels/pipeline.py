@@ -76,8 +76,11 @@ def main():
             train_folder = os.path.join(k_fold_folder, "train")
             val_folder = os.path.join(k_fold_folder, "val")
 
-            dataloaders, dataset_sizes, class_names, device = load_dataset(k_fold_folder,
+            dataloaders, dataset_sizes, class_names, device, subject_ids = load_dataset(k_fold_folder,
                                                                            args.data_augmentation, args.batch_size)
+            
+
+            test_subjects.append([f"soggetto_{subject_id}" for subject_id in subject_ids])
 
 
             model_path, history = train_model(dataloaders, dataset_sizes, class_names, device,
@@ -107,13 +110,6 @@ def main():
             model_predictions.append(predictions)
             real_labels.append(labels)
             
-            # image name is in the string between the first underscore and the last dot
-            
-            # dataloaders is a tensor dataset, we need to get the image paths from the dataset
-            # subject_ids = [os.path.basename(str(image_path)).split("soggetto_")[1].split(".")[0]
-            #                for image_path in dataloaders["val"].dataset.imgs]
-            
-            # test_subjects.append(subject_ids)
 
 
         mean_accuracy = np.mean([accuracy for accuracy in k_fold_accuracies])
@@ -152,14 +148,14 @@ def main():
 
 
         # save the predictions and real labels to a csv file in the output folder, with subjet_id, age, prediction, and real_label as columns
-        # predictions_df = pd.DataFrame({"subject_id": np.concatenate(test_subjects), "prediction": model_predictions, "real_label": real_labels})
+        predictions_df = pd.DataFrame({"subject_id": np.concatenate(test_subjects), "prediction": model_predictions, "real_label": real_labels})
 
-        # # save the predictions to a csv file, if the file already exists, delete it and create a new one
-        # predictions_file = os.path.join(OUTPUTS_FOLDER, "predictions.csv")
-        # if os.path.exists(predictions_file):
-        #     os.remove(predictions_file)
+        # save the predictions to a csv file, if the file already exists, delete it and create a new one
+        predictions_file = os.path.join(OUTPUTS_FOLDER, "predictions.csv")
+        if os.path.exists(predictions_file):
+            os.remove(predictions_file)
 
-        # predictions_df.to_csv(predictions_file, index=False)
+        predictions_df.to_csv(predictions_file, index=False)
 
     else:
 
