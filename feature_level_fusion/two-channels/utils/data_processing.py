@@ -8,7 +8,14 @@ import numpy as np
 import cv2
 from PIL import Image
 
-OUTPUTS_FOLDER = "test_torch_seed"
+# load env variables
+from dotenv import load_dotenv
+
+
+load_dotenv()
+
+
+OUTPUTS_FOLDER = os.getenv("OUTPUTS_FOLDER", "outputs")
 DATASET_FOLDER = OUTPUTS_FOLDER + "/data"
 MODELS_FOLDER = OUTPUTS_FOLDER + "/models"
 
@@ -31,16 +38,6 @@ def prepare_folders():
     
     # clear data folder
     os.system(f"rm -rf {DATASET_FOLDER}/*")
-
-    # create train and val folders
-    for folder in [TRAIN_FOLDER, VAL_FOLDER]:
-        if not os.path.exists(folder):
-            os.makedirs(folder)
-                
-            for c in CLASSES:
-                class_folder = os.path.join(folder, c)
-                if not os.path.exists(class_folder):
-                    os.makedirs(class_folder)
             
 
 
@@ -125,33 +122,64 @@ def load_data_into_folders(data_file):
 
 def load_data_into_k_fold_folders(data_file, k=5):
     
-        data = pd.read_csv(data_file)
-    
-        # shuffle the data
-        data = data.sample(frac=1, random_state=SEED)
-    
-        # split the data into k folds
-        k_fold_data = np.array_split(data, k)
-    
-        # save data into k-fold folders, each folder contains a train and val folder with subfolders for each class
-        k_fold_folders = []
-        
-        for i in range(k):
-            k_fold_folder = os.path.join(DATASET_FOLDER, f"k_fold_{i}")
-            k_fold_folders.append(k_fold_folder)
-            
-            for folder in [k_fold_folder + "/train", k_fold_folder + "/val"]:
+    data = pd.read_csv(data_file)
+
+    unique_subjects = data["subject_id"].unique()
+
+    # shuffle the subjects
+    np.random.seed(SEED)
+    np.random.shuffle(unique_subjects)
+
+    # split the subjects into k folds
+    # k_fold_subjects = np.array_split(unique_subjects, k)
+    k_fold_subjects = [unique_subjects[i::k] for i in range(k)]
+
+    k_fold_data = []
+    for i in range(k):
+        val_subjects = k_fold_subjects[i]
+        train_subjects = np.concatenate([k_fold_subjects[j] for j in range(k) if j != i])
+
+        train_data = data[data["subject_id"].isin(train_subjects)]
+        val_data = data[data["subject_id"].isin(val_subjects)]
+
+        k_fold_data.append((train_data, val_data))
+
+    # create k-fold folders
+    for i in range(k):
+        k_fold_folder = os.path.join(DATASET_FOLDER, f"k_fold_{i}")
+        if not os.path.exists(k_fold_folder):
+            os.makedirs(k_fold_folder)
+
+        for folder in [os.path.join(k_fold_folder, "train"), os.path.join(k_fold_folder, "val")]:
+            if not os.path.exists(folder):
+                os.makedirs(folder)
+                
                 for c in CLASSES:
                     class_folder = os.path.join(folder, c)
                     if not os.path.exists(class_folder):
                         os.makedirs(class_folder)
-            
-            # copy the images to the train and val folders
-            for j, df in enumerate(k_fold_data):
-                folder = k_fold_folder + "/val" if j == i else k_fold_folder + "/train"
-                for index, row in df.iterrows():
-                    image_path = row["image"]
-                    class_folder = os.path.join(folder, "under_18" if row["under_18"] else "over_18")
-                    shutil.copy(image_path, class_folder)
 
-        return k_fold_folders
+        subjects = {"train": k_fold_data[i][0], "val": k_fold_data[i][1]}
+
+        for subject_type, subject_data in subjects.items():
+            for subject in subject_data["subject_id"].unique():
+                subject_data = data[data["subject_id"] == subject]
+                # stack the left and right images (grayscale) from 2x 2D images to 1x 3D image
+                images = [cv2.imread(image, cv2.IMREAD_GRAYSCALE) for image in subject_data["image"]]
+
+                class_folder = os.path.join(k_fold_folder, subject_type, "under_18" if subject_data.iloc[0]["under_18"] else "over_18")
+                
+                stacked_image = np.stack(images, axis=-1)
+                # add dimension of zeros to the stacked image
+                stacked_image = np.concatenate([stacked_image, np.zeros_like(images[0])[..., np.newaxis]], axis=-1)
+                # save the stacked image as lossless rgb bmp
+                im = Image.fromarray(stacked_image)
+                im.save(os.path.join(class_folder, f"{subject}.bmp"))
+                
+
+
+
+
+    k_fold_folders = [os.path.join(DATASET_FOLDER, f"k_fold_{i}") for i in range(k)]
+
+    return k_fold_folders
