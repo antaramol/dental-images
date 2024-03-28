@@ -159,27 +159,42 @@ To simplify the segmentation and rotation processes, we developed a graphical us
 
 \begin{table}[t]
 	\centering
-	\caption{}
-	\begin{tabular}{ccc}
+	\caption{Subject Split results}
+	\begin{tabular}{cccccc}
 		\hline
 		\hline
-		architecture & from\_pretrained & data\_augmentation \\ 
+		model & batch size & learning\_rate & mean\_acc & std\_acc \\
 		\hline
-		resnet18 & True & True \\ 
-		resnet18 & True & True \\ 
-		resnet18 & True & True \\ 
-		resnet18 & True & True \\ 
-		resnet18 & True & True \\ 
-		resnet18 & True & True \\ 
-		resnet18 & True & True \\ 
-		resnet18 & True & True \\ 
-		resnet18 & True & True \\ 
-		resnet18 & True & True \\ 
+		resnet18 & 64 & 0.001 & 0.7662 & 0.0711 \\ 
+		resnet34 & 32 & 0.0001 & 0.7612 & 0.0539 \\ 
+		resnet18 & 32 & 0.001 & 0.7572 & 0.0520 \\ 
+		resnet34 & 64 & 0.001 & 0.7530 & 0.0564 \\ 
+
 		\hline
 		\hline
 	\end{tabular}
-	\label{tab:hyperparameters}
+	\label{tab:SubjectSplit}
 \end{table}
+
+
+\begin{table}[t]
+	\centering
+	\caption{Score Level Fusion results}
+	\begin{tabular}{cccccc}
+		\hline
+		\hline
+		model, technique & batch size & learning\_rate & mean\_acc & std\_acc \\
+		\hline
+		resnet18, avg & 0.001 & 64 & 0.7236 & 0.0854 \\
+		resnet34, max & 0.0001 & 32 & 0.7175 & 0.0653 \\
+		resnet34, avg & 0.001 & 64 & 0.7116 & 0.0670 \\
+		resnet34, avg & 0.001 & 32 & 0.6984 & 0.0864 \\
+		\hline
+		\hline
+	\end{tabular}
+	\label{tab:ScoreLevelFusion}
+\end{table}
+
 	
 
 
